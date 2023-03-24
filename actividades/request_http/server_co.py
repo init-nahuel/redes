@@ -4,7 +4,7 @@ from utils import *
 # definimos el tamaño del buffer de recepción y la secuencia de fin de mensaje
 buff_size = 4
 end_of_message = "\n"
-new_socket_address = ('localhost', 5000)
+new_socket_address = ('localhost', 8000)
 
 print('Creando socket - Servidor')
 # armamos el socket
@@ -35,7 +35,8 @@ while True:
     print(f' -> Se ha recibido el siguiente mensaje: {recv_message}')
 
     # respondemos indicando que recibimos el mensaje
-    response_message = f"Se ha sido recibido con éxito el mensaje: {recv_message}"
+    # response_message = f"Se ha sido recibido con éxito el mensaje: {recv_message}"
+    response_message = recv_message
 
     # el mensaje debe pasarse a bytes antes de ser enviado, para ello usamos encode
     new_socket.send(response_message.encode())
