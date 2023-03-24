@@ -1,20 +1,34 @@
-import os
+# import os
+import re
+
+# Retorna -1 si el header Content-Length no se encuentra por completo en message, 
+# de otra forma retorna el valor de este header.
+# OBS: la expresion regular como tal no necesitaria hacer math de espacios luego del numero
+# pues por formato debiese de ir de inmediato '\r\n'
+def contains_length_header(message):
+    msg = message.lower()
+    regex = re.compile(r'Content-Length: (\d*)\r\n')
+    content_lenght = regex.search(message)
+    try:
+        return content_lenght.group(1)
+    except:
+        return -1
 
 # esta función se encarga de recibir el mensaje completo desde el cliente
 # en caso de que el mensaje sea más grande que el tamaño del buffer 'buff_size', esta función va esperar a que
 # llegue el resto
 
-def receive_full_mesage(connection_socket, buff_size, end_sequence):
+def receive_full_mesage_http(connection_socket, buff_size):
 
     # recibimos la primera parte del mensaje
+    end_sequence = '\r\n'
     recv_message = connection_socket.recv(buff_size)
     full_message = recv_message
 
     # verificamos si llegó el mensaje completo o si aún faltan partes del mensaje
     is_end_of_message = contains_end_of_message(full_message.decode(), end_sequence)
 
-    # entramos a un while para recibir el resto y seguimos esperando información
-    # mientras el buffer no contenga secuencia de fin de mensaje
+    # Obtenemos el HEAD
     while not is_end_of_message:
         # recibimos un nuevo trozo del mensaje
         recv_message = connection_socket.recv(buff_size)
