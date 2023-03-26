@@ -16,10 +16,9 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # para ello usamos bind
 server_socket.bind(new_socket_address)
 
-# luego con listen (función de sockets de python) le decimos que puede
-# tener hasta 3 peticiones de conexión encoladas
-# si recibiera una 4ta petición de conexión la va a rechazar
-server_socket.listen(3)
+# Como es un servidor encargado de escuchar peticiones simplemente escuchamos
+# sin un limite (se aplica el valor por default del metodo).
+server_socket.listen()
 
 # nos quedamos esperando a que llegue una petición de conexión
 print('... Esperando clientes')
@@ -28,24 +27,21 @@ while True:
     # y se crea un nuevo socket que se comunicará con el cliente
     new_socket, new_socket_address = server_socket.accept()
 
-    # luego recibimos el mensaje usando la función que programamos
-    # esta función entrega el mensaje en string (no en bytes) y sin el end_of_message
+    # luego recibimos el mensaje HTTP decodificado
     recv_message = receive_full_mesage_http(new_socket, buff_size, end_of_message)
 
-    # print(f' -> Se ha recibido el siguiente mensaje: {recv_message}')
+    print(f' -> Se ha recibido el siguiente mensaje: {recv_message}')
 
     # respondemos indicando que recibimos el mensaje
-    # response_message = f"Se ha sido recibido con éxito el mensaje: {recv_message}"
-    http_dict = from_http_to_data(recv_message)
+    response_message = f"Se ha sido recibido con éxito el mensaje: {recv_message}"
+    # http_dict = from_http_to_data(recv_message)
     # response_message = recv_message
-    response = from_data_to_http(http_dict)
+    # response = from_data_to_http(http_dict)
 
-    # el mensaje debe pasarse a bytes antes de ser enviado, para ello usamos encode
-    # new_socket.send(response_message.encode())
-    new_socket.send(response.encode())
+    # Respondemos con el mismo mensaje HTTP, codificandolo
+    new_socket.send(recv_message.encode())
 
     # cerramos la conexión
-    # notar que la dirección que se imprime indica un número de puerto distinto al 5000
     new_socket.close()
     print(f"conexión con {new_socket_address} ha sido cerrada")
 
