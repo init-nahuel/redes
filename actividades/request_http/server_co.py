@@ -3,7 +3,7 @@ from utils import *
 
 # definimos el tamaño del buffer de recepción y la secuencia de fin de mensaje
 buff_size = 4
-end_of_message = "\n"
+end_of_message = "\r\n\r\n"
 new_socket_address = ('localhost', 8000)
 
 print('Creando socket - Servidor')
@@ -30,16 +30,19 @@ while True:
 
     # luego recibimos el mensaje usando la función que programamos
     # esta función entrega el mensaje en string (no en bytes) y sin el end_of_message
-    recv_message = receive_full_mesage(new_socket, buff_size, end_of_message)
+    recv_message = receive_full_mesage_http(new_socket, buff_size, end_of_message)
 
-    print(f' -> Se ha recibido el siguiente mensaje: {recv_message}')
+    # print(f' -> Se ha recibido el siguiente mensaje: {recv_message}')
 
     # respondemos indicando que recibimos el mensaje
     # response_message = f"Se ha sido recibido con éxito el mensaje: {recv_message}"
-    response_message = recv_message
+    http_dict = from_http_to_data(recv_message)
+    # response_message = recv_message
+    response = from_data_to_http(http_dict)
 
     # el mensaje debe pasarse a bytes antes de ser enviado, para ello usamos encode
-    new_socket.send(response_message.encode())
+    # new_socket.send(response_message.encode())
+    new_socket.send(response.encode())
 
     # cerramos la conexión
     # notar que la dirección que se imprime indica un número de puerto distinto al 5000
