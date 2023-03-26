@@ -55,12 +55,13 @@ def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\
 
     # Recibimos el BODY
     full_message = full_message.decode()
-    index_begin_body = full_message.index(end_sequence) + len(end_sequence) - 1
     content_length = content_length_header(full_message)
-    body_buff_size = content_length - len(full_message[index_begin_body:])
-    print(f"body_buff_size: {body_buff_size}")
+    if content_length > 0:
+        index_begin_body = full_message.index(end_sequence) + len(end_sequence) - 1
+        body_buff_size = content_length - len(full_message[index_begin_body:])
+        full_message += connection_socket.recv(body_buff_size).decode()
+        print(f"body_buff_size: {body_buff_size}")
     print(f"content_length: {content_length}")
-    full_message += connection_socket.recv(body_buff_size).decode()
 
     return full_message
 
