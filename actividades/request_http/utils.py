@@ -1,20 +1,6 @@
 import os
 import re
 
-response = """POST /cgi-bin/process.cgi HTTP/1.1
-User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)
-Host: www.tutorialspoint.com
-Content-Type: text/xml; charset=utf-8
-Content-Length: 123
-Accept-Language: en-us
-Accept-Encoding: gzip, deflate
-Connection: Keep-Alive
-
-# <?xml version="1.0" encoding="utf-8"?>
-# <string xmlns="http://clearforest.com/">string</string>"""
-
-# response = """POST /cgi-bin/process.cgi HTTP/1.1\r\nUser-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)\r\nHost: www.tutorialspoint.com\r\nContent-Type: text/xml; charset=utf-8\r\nContent-Length: 123\r\nAccept-Language: en-us\r\nAccept-Encoding: gzip, deflate\r\nConnection: Keep-Alive\r\n\r\n<?xml version="1.0" encoding="utf-8"?><string xmlns="http://clearforest.com/">string</string>"""
-
 def content_length_header(message):
     """Retorna -1 si el header Content-Length no se encuentra por completo en message,
     de otra forma retorna el largo declarado.
@@ -28,8 +14,6 @@ def content_length_header(message):
         return int(content_lenght.group(1))
     except AttributeError:
         return -1
-    
-assert content_length_header(response) == 123
 
 def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\n'):
     """Recibe el mensaje HTTP completo desde el cliente, primero recibe el HEAD
@@ -60,8 +44,6 @@ def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\
         index_begin_body = full_message.index(end_sequence) + len(end_sequence) - 1
         body_buff_size = content_length - len(full_message[index_begin_body:])
         full_message += connection_socket.recv(body_buff_size).decode()
-        print(f"body_buff_size: {body_buff_size}")
-    print(f"content_length: {content_length}")
 
     return full_message
 
@@ -97,16 +79,30 @@ def from_http_to_data(message):
     return http_dict
 
 def from_data_to_http(http_dict):
-    """Retorna el mensaje HTTP original"""
+    """Retorna el mensaje HTTP original."""
 
-    http_message = http_dict['start_line'] + '\r\n'
+    # http_message = http_dict['start_line'] + '\r\n'
+    http_message = http_dict['start_line'] + os.linesep
     del http_dict['start_line']
 
     for key, value in http_dict.copy().items():
         if (len(http_dict) == 1):
-            http_message += '\r\n\r\n' + value
+            # http_message += '\r\n\r\n' + value
+            http_message += 2*os.linesep + value
         else:
-            http_message += key + value + '\r\n'
+            # http_message += key + value + '\r\n'
+            http_message += key + value + os.linesep
         del http_dict[key]
 
     return http_message
+
+def create_http_response(file, content_type = 'text/html', name = 'Nahuel'):
+    """Retorna un mensaje HTTP como respuesta a una request por parte del cliente,
+    por defecto el header Content-Type indica que el tipo del BODY es texto o html.
+    """
+    response = "HTTP/1.1 200 OK"+os.linesep
+    response += f"Content-Type: {content_type}; charset=UTF-8"+os.linesep
+    response += f"X-ElQuePregunta: {name}"+os.linesep
+    response += f"Content-Length: {len(file)}"+2*os.linesep
+    response += file
+    return response
