@@ -3,16 +3,16 @@ import sys
 import json
 from utils import *
 
-# filename = sys.argv[1]
-# path = sys.argv[2]
+filename = sys.argv[1]
+path = sys.argv[2]
 
-# json_file = open(path+'/'+filename, "r")
-# data = json.load(json_file)
-# name = data["name"]
+json_file = open(path+'/'+filename, "r")
+data = json.load(json_file)
+blocked_uris = data['blocked']
 
-f = open("index.html", "r")
-html_file = f.read()
-response = create_http_response(html_file)
+# f = open("index.html", "r")
+# html_file = f.read()
+# response = create_http_response(html_file)
 
 # definimos el tamaño del buffer de recepción
 buff_size = 4
@@ -38,30 +38,40 @@ while True:
     new_socket, new_socket_address = server_socket.accept()
 
     # luego recibimos el mensaje HTTP decodificado
-    recv_message = receive_full_mesage_http(new_socket, buff_size)
+    message_from_client = receive_full_mesage_http(new_socket, buff_size)
 
-    print(f' -> Se ha recibido el siguiente mensaje: \n{recv_message}')
+    print(f' -> Se ha recibido el siguiente mensaje: \n{message_from_client}')
 
-    # TODO: Mandar a dormir el socket cliente mientras se interactua con el servidor (?)
-
-    # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
-    proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    # Nos conectamos a al servidor de destino y enviamos la request
-    proxy_socket.connect(('example.com', 443)) # TODO: ver por que debe ser el puerto 443 (no funca con 5000)
-    proxy_socket.send(recv_message.encode()) 
-
-    print(f' -> Enviando request al servidor: \n{recv_message}')
-
-    # Recibimos la response desde el servidor
-    response_from_server = receive_full_mesage_http(proxy_socket, buff_size)
-
-    print(f' -> Respuesta recibida del servidor: \n{response_from_server}')
+    uri = get_uri(from_http_to_data(message_from_client)['start_line'])
+    print(f'la uri es: {uri}')
     
-    # Respondemos al cliente con la response del servidor
-    new_socket.send(response_from_server.encode())
+    if (is_available(uri, blocked_uris)):
+        # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
+        proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # Cerramos las conexiones
-    proxy_socket.close()
+        # Nos conectamos a al servidor de destino y enviamos la request
+        proxy_socket.connect((uri, 80)) # Puerto 80 es el puerto por defecto para HTTP
+
+        new_http_msg_username = add_header(message_from_client, 'X-ElQuePregunta', 'Nahuel')
+
+        proxy_socket.send(new_http_msg_username.encode())
+
+        print(f' -> Enviando request al servidor: \n{message_from_client}')
+
+        # Recibimos la response desde el servidor
+        response_from_server = receive_full_mesage_http(proxy_socket, buff_size)
+
+        print(f' -> Respuesta recibida del servidor: \n{response_from_server}')
+        
+        # Respondemos al cliente con la response del servidor
+        new_socket.send(response_from_server.encode())
+
+        # Cerramos la conexion
+        proxy_socket.close()
+    else:
+        response_error_dict = {'start_line': "HTTP/1.1 403 Forbidden"}
+        response = from_data_to_http(response_error_dict)
+        new_socket.send(response.encode())
+
     new_socket.close()
     print(f"conexión con {new_socket_address} ha sido cerrada")

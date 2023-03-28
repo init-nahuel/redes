@@ -1,14 +1,27 @@
 import os
 import re
 
+def is_available(uri, blocked_uris):
+    for u in blocked_uris:
+        if (get_uri(u) == uri):
+            return True
+    return False
+
+def get_uri(message):
+    regex = re.compile(r"http://((\w+|\.)*(.com|.cl))")
+    uri = regex.search(message)
+    try:
+        return uri.group(1)
+    except AttributeError:
+        return 'a'
+
 def content_length_header(message):
     """Retorna -1 si el header Content-Length no se encuentra por completo en message,
     de otra forma retorna el largo declarado.
     La expresion regular se rige por el formato estandar que debiesen tener los mensajes HTTP.
     """
 
-    # regex = re.compile(r'Content-Length: (\d+)\r\n')
-    regex = re.compile(r'Content-Length: (\d+)'+os.linesep)
+    regex = re.compile(r'Content-Length: (\d+)\r\n')
     content_lenght = regex.search(message)
     try:
         return int(content_lenght.group(1))
@@ -37,13 +50,12 @@ def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\
 
         is_end_of_message = contains_end_of_head(full_message.decode(), end_sequence)
 
-    # Recibimos el BODY
+    # Recibimos el BODY (En caso de existir)
     full_message = full_message.decode()
     content_length = content_length_header(full_message)
+    print(f"el content length es: {content_length}")
     if content_length > 0:
-        index_begin_body = full_message.index(end_sequence) + len(end_sequence) - 1
-        body_buff_size = content_length - len(full_message[index_begin_body:])
-        full_message += connection_socket.recv(body_buff_size).decode()
+        full_message += connection_socket.recv(content_length).decode()
 
     return full_message
 
@@ -59,13 +71,10 @@ def from_http_to_data(message):
     con from_data_to_http(), el mensaje generado volvera a mantener los estandares
     de formato.
     """
-    # Las lineas comentadas sirven en caso de que el mensaje HTTP se encuentre con saltos de linea y no un solo un string con los
-    # respectivos \r\n y \r\n\r\n
-    # head, body = message.split('\r\n\r\n')
-    head, body = message.split(2*os.linesep)
 
-    # headers = head.split('\r\n')
-    headers= head.split(os.linesep)
+    head, body = message.split('\r\n\r\n')
+
+    headers = head.split('\r\n')
 
     start_line = headers[0]
     http_dict = {'start_line': start_line}
@@ -74,35 +83,36 @@ def from_http_to_data(message):
         param, detail = header.split(':')
         http_dict[param] = detail
 
-    http_dict['body'] = body
+    if (body != ''):
+        http_dict['body'] = body
 
     return http_dict
 
 def from_data_to_http(http_dict):
-    """Retorna el mensaje HTTP original."""
+    """Retorna un mensaje HTTP creado a partir de los componentes del diccionario.
+    """
 
-    # http_message = http_dict['start_line'] + '\r\n'
-    http_message = http_dict['start_line'] + os.linesep
+    if (len(http_dict) == 1):
+        http_message = http_dict['start_line'] + '\r\n\r\n'    
+    else:
+        http_message = http_dict['start_line'] + '\r\n'
     del http_dict['start_line']
+    copy_http_dict = http_dict.copy()
 
-    for key, value in http_dict.copy().items():
-        if (len(http_dict) == 1):
-            # http_message += '\r\n\r\n' + value
-            http_message += 2*os.linesep + value
+    for key, value in copy_http_dict.items():
+        if (len(http_dict) == 1 & 'Content-Length' in copy_http_dict):
+            http_message += '\r\n\r\n' + value
+        elif (len(http_dict) == 1):
+            http_message += key + value + '\r\n\r\n'
         else:
-            # http_message += key + value + '\r\n'
-            http_message += key + value + os.linesep
-        del http_dict[key]
+            http_message += key + value + '\r\n'
 
     return http_message
 
-def create_http_response(file, content_type = 'text/html', name = 'Nahuel'):
-    """Retorna un mensaje HTTP como respuesta a una request por parte del cliente,
-    por defecto el header Content-Type indica que el tipo del BODY es texto o html.
-    """
-    response = "HTTP/1.1 200 OK"+os.linesep
-    response += f"Content-Type: {content_type}; charset=UTF-8"+os.linesep
-    response += f"X-ElQuePregunta: {name}"+os.linesep
-    response += f"Content-Length: {len(file)}"+2*os.linesep
-    response += file
-    return response
+def add_header(http_message, header_name, header_content):
+    http_dict = from_http_to_data(http_message)
+    start_line = http_dict['start_line']
+    del http_dict['start_line']
+    http_dict.update({header_name:' '+str(header_content)+'\r\n'})
+    http_dict.update({'start_line': start_line+'\r\n'})
+    return http_message
