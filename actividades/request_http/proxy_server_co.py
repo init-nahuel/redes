@@ -3,16 +3,16 @@ import sys
 import json
 from utils import *
 
-filename = sys.argv[1]
-path = sys.argv[2]
+# filename = sys.argv[1]
+# path = sys.argv[2]
 
-json_file = open(path+'/'+filename, "r")
-data = json.load(json_file)
-name = data["name"]
+# json_file = open(path+'/'+filename, "r")
+# data = json.load(json_file)
+# name = data["name"]
 
 f = open("index.html", "r")
 html_file = f.read()
-response = create_http_response(html_file, name=name)
+response = create_http_response(html_file)
 
 # definimos el tamaño del buffer de recepción
 buff_size = 4
@@ -42,11 +42,13 @@ while True:
 
     print(f' -> Se ha recibido el siguiente mensaje: \n{recv_message}')
 
+    # TODO: Mandar a dormir el socket cliente mientras se interactua con el servidor (?)
+
     # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
     proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Nos conectamos a al servidor de destino y enviamos la request
-    proxy_socket.connect(('example.com', 8000)) # TODO: ver por que no conecta :(
+    proxy_socket.connect(('example.com', 443)) # TODO: ver por que debe ser el puerto 443 (no funca con 5000)
     proxy_socket.send(recv_message.encode()) 
 
     print(f' -> Enviando request al servidor: \n{recv_message}')
@@ -58,9 +60,6 @@ while True:
     
     # Respondemos al cliente con la response del servidor
     new_socket.send(response_from_server.encode())
-
-    # Respondemos con el mismo mensaje HTTP, codificandolo
-    # new_socket.send(response.encode())
 
     # Cerramos las conexiones
     proxy_socket.close()
