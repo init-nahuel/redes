@@ -52,18 +52,19 @@ while True:
         # Nos conectamos a al servidor de destino y enviamos la request
         proxy_socket.connect((host, 80)) # Puerto 80 es el puerto por defecto para HTTP
 
-        new_http_msg_username = add_header(message_from_client, 'X-ElQuePregunta', 'Nahuel')
+        if (host == 'cc4303.bachmann.cl'):
+            message_from_client = add_header(message_from_client, 'X-ElQuePregunta', 'Nahuel')
 
-        proxy_socket.send(new_http_msg_username.encode())
+        proxy_socket.send(message_from_client.encode())
 
-        print(f' -> Enviando request al servidor: \n{new_http_msg_username}')
+        print(f' -> Enviando request al servidor: \n{message_from_client}')
 
         # Recibimos la response desde el servidor
         response_from_server = receive_full_mesage_http(proxy_socket, buff_size)
 
         print(f' -> Respuesta recibida del servidor: \n{response_from_server}')
         
-        response_from_server = replace_forbidden_words(response_from_server, data['forbidden_words']) # TODO: no llega todo el msg en curl
+        response_from_server = replace_forbidden_words(response_from_server, data['forbidden_words'])
 
         print(f' -> Respuesta del servidor filtrada: \n{response_from_server}')
         
