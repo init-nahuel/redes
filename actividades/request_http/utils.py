@@ -3,15 +3,18 @@ import re
 
 def is_available(uri, blocked_uris):
     for u in blocked_uris:
-        if (get_uri(u) == uri):
-            return True
-    return False
+        if (u == uri):
+            return False
+    return True
 
-def get_uri(message):
+def get_uri(msg):
+    return msg.split(' ')[1]
+
+def get_host(message):
     regex = re.compile(r"http://((\w+|\.)*(.com|.cl))")
     uri = regex.search(message)
     try:
-        return uri.group(1)
+        return str(uri.group(1))
     except AttributeError:
         return 'a'
 
@@ -53,7 +56,6 @@ def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\
     # Recibimos el BODY (En caso de existir)
     full_message = full_message.decode()
     content_length = content_length_header(full_message)
-    print(f"el content length es: {content_length}")
     if content_length > 0:
         full_message += connection_socket.recv(content_length).decode()
 
@@ -93,19 +95,20 @@ def from_data_to_http(http_dict):
     """
 
     if (len(http_dict) == 1):
-        http_message = http_dict['start_line'] + '\r\n\r\n'    
+        http_message = http_dict['start_line'] + '\r\n\r\n'
     else:
         http_message = http_dict['start_line'] + '\r\n'
     del http_dict['start_line']
     copy_http_dict = http_dict.copy()
 
     for key, value in copy_http_dict.items():
-        if (len(http_dict) == 1 & 'Content-Length' in copy_http_dict):
+        if (len(http_dict) == 1 and 'Content-Length' in copy_http_dict):
             http_message += '\r\n\r\n' + value
         elif (len(http_dict) == 1):
-            http_message += key + value + '\r\n\r\n'
+            http_message += key + ':' + value + '\r\n\r\n'
         else:
-            http_message += key + value + '\r\n'
+            http_message += key + ':' + value + '\r\n'
+        del http_dict[key]
 
     return http_message
 
@@ -113,6 +116,16 @@ def add_header(http_message, header_name, header_content):
     http_dict = from_http_to_data(http_message)
     start_line = http_dict['start_line']
     del http_dict['start_line']
-    http_dict.update({header_name:' '+str(header_content)+'\r\n'})
-    http_dict.update({'start_line': start_line+'\r\n'})
-    return http_message
+    http_dict = {'start_line': start_line, header_name:' '+str(header_content)} | http_dict
+    print(http_dict)
+    new_http_msg = from_data_to_http(http_dict)
+    
+    return new_http_msg
+
+def replace_forbidden_words(http_msg, forb_words):
+    for d in forb_words:
+        for key, value in d.items():
+            if key in http_msg:
+                http_msg = http_msg.replace(key, value)
+    
+    return http_msg

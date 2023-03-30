@@ -42,24 +42,27 @@ while True:
 
     print(f' -> Se ha recibido el siguiente mensaje: \n{message_from_client}')
 
-    uri = get_uri(from_http_to_data(message_from_client)['start_line'])
-    print(f'la uri es: {uri}')
+    host = get_host(from_http_to_data(message_from_client)['start_line'])
+    uri = get_uri(message_from_client)
+    print(f"el host es {host}")
+    print(f"uri es {uri}")
     
     if (is_available(uri, blocked_uris)):
         # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
         proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Nos conectamos a al servidor de destino y enviamos la request
-        proxy_socket.connect((uri, 80)) # Puerto 80 es el puerto por defecto para HTTP
+        proxy_socket.connect((host, 80)) # Puerto 80 es el puerto por defecto para HTTP
 
         new_http_msg_username = add_header(message_from_client, 'X-ElQuePregunta', 'Nahuel')
 
         proxy_socket.send(new_http_msg_username.encode())
 
-        print(f' -> Enviando request al servidor: \n{message_from_client}')
+        print(f' -> Enviando request al servidor: \n{new_http_msg_username}')
 
         # Recibimos la response desde el servidor
         response_from_server = receive_full_mesage_http(proxy_socket, buff_size)
+        response_from_server = replace_forbidden_words(response_from_server, data['forbidden_words'])
 
         print(f' -> Respuesta recibida del servidor: \n{response_from_server}')
         
