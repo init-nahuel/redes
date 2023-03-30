@@ -15,7 +15,7 @@ blocked_uris = data['blocked']
 # response = create_http_response(html_file)
 
 # definimos el tamaño del buffer de recepción
-buff_size = 4
+buff_size = 50
 new_socket_address = ('localhost', 8000)
 
 print('Creando socket - Servidor')
@@ -44,8 +44,6 @@ while True:
 
     host = get_host(from_http_to_data(message_from_client)['start_line'])
     uri = get_uri(message_from_client)
-    print(f"el host es {host}")
-    print(f"uri es {uri}")
     
     if (is_available(uri, blocked_uris)):
         # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
@@ -62,9 +60,12 @@ while True:
 
         # Recibimos la response desde el servidor
         response_from_server = receive_full_mesage_http(proxy_socket, buff_size)
-        response_from_server = replace_forbidden_words(response_from_server, data['forbidden_words'])
 
         print(f' -> Respuesta recibida del servidor: \n{response_from_server}')
+        
+        response_from_server = replace_forbidden_words(response_from_server, data['forbidden_words']) # TODO: no llega todo el msg en curl
+
+        print(f' -> Respuesta del servidor filtrada: \n{response_from_server}')
         
         # Respondemos al cliente con la response del servidor
         new_socket.send(response_from_server.encode())
