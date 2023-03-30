@@ -1,4 +1,3 @@
-import os
 import re
 
 def is_available(uri, blocked_uris):
@@ -82,7 +81,7 @@ def from_http_to_data(message):
     http_dict = {'start_line': start_line}
 
     for header in headers[1:]:
-        param, detail = header.split(':')
+        param, detail = header.split(':', 1)
         http_dict[param] = detail
 
     if (body != ''):
@@ -103,7 +102,7 @@ def from_data_to_http(http_dict):
 
     for key, value in copy_http_dict.items():
         if (len(http_dict) == 1 and 'Content-Length' in copy_http_dict):
-            http_message += '\r\n\r\n' + value
+            http_message += '\r\n' + value
         elif (len(http_dict) == 1):
             http_message += key + ':' + value + '\r\n\r\n'
         else:
@@ -117,15 +116,22 @@ def add_header(http_message, header_name, header_content):
     start_line = http_dict['start_line']
     del http_dict['start_line']
     http_dict = {'start_line': start_line, header_name:' '+str(header_content)} | http_dict
-    print(http_dict)
     new_http_msg = from_data_to_http(http_dict)
     
     return new_http_msg
 
 def replace_forbidden_words(http_msg, forb_words):
+    new_http_dict =  from_http_to_data(http_msg)
+    body = new_http_dict['body']
+    
     for d in forb_words:
         for key, value in d.items():
-            if key in http_msg:
-                http_msg = http_msg.replace(key, value)
+            if key in body:
+                body = body.replace(key, value)
     
-    return http_msg
+    new_http_dict['body'] = body
+    new_size = len(body.encode())
+    new_http_dict['Content-Length'] = ' '+str(new_size)
+    new_msg = from_data_to_http(new_http_dict)
+    
+    return new_msg
