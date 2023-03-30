@@ -112,6 +112,11 @@ def from_data_to_http(http_dict):
     return http_message
 
 def add_header(http_message, header_name, header_content):
+    """Agrega un nuevo header a un mensaje HTTP, este nuevo header
+    se encontrara justo debajo de la start-line del mensaje HTTP,
+    por tanto sera el primer header.
+    """
+    
     http_dict = from_http_to_data(http_message)
     start_line = http_dict['start_line']
     del http_dict['start_line']
@@ -121,6 +126,9 @@ def add_header(http_message, header_name, header_content):
     return new_http_msg
 
 def replace_forbidden_words(http_msg, forb_words):
+    """Reemplaza las palabras prohibidas en un mensaje HTTP dado una lista
+    que contiene diccionarios con las palabras prohibidas y su reemplazo.
+    """
     new_http_dict =  from_http_to_data(http_msg)
     body = new_http_dict['body']
     
