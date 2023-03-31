@@ -1,15 +1,26 @@
 import re
 
 def is_available(uri, blocked_uris):
+    """Retorna True si la uri no se encuentra en la lista de uris bloqueadas y false en
+    caso contrario.
+    """
+
     for u in blocked_uris:
         if (u == uri):
             return False
     return True
 
 def get_uri(msg):
+    """Retorna la uri extraida del startline de un mensaje HTTP.
+    """
+    
     return msg.split(' ')[1]
 
 def get_host(message):
+    """Obtiene el host dado un mensaje HTTP por medio de una expresion regular 
+    (utiliza el modulo re de python).
+    """
+
     regex = re.compile(r"http://((\w+|\.)*(.com|.cl))")
     uri = regex.search(message)
     try:
@@ -32,11 +43,15 @@ def content_length_header(message):
 
 def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\n'):
     """Recibe el mensaje HTTP completo desde el cliente, primero recibe el HEAD
-    y luego recibe el BODY a traves de la obtencion
+    y luego recibe el BODY (en caso de existir) a traves de la obtencion
     del largo de este, por ultimo retorna el mensaje HTTP decodificado.
     Por ahora se considera que el contenido de los mensajes es texto plano y no
-    imagenes, por eso se retorna
-    decodificado el mensaje.
+    imagenes, por eso se retorna decodificado el mensaje.
+
+    La funcion permite escoger un buff_size de cualquier tamanho, en caso de ser mas
+    pequenho que el mensaje simplemente se va recibiendo por trozos, por otro lado
+    si el buff_size es de mayor tamanho que el mensaje solo se realiza una llamada a recv,
+    la inicial, dada la estructura de control de flujo.
     """
 
     recv_message = connection_socket.recv(buff_size)
@@ -55,12 +70,16 @@ def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\
     # Recibimos el BODY (En caso de existir)
     full_message = full_message.decode()
     content_length = content_length_header(full_message)
-    if content_length > 0:
+    if content_length > 0 and buff_size < (content_length + len(full_message.split('\r\n\r\n')[0].encode()) + 4):
         full_message += connection_socket.recv(content_length).decode()
 
     return full_message
 
 def contains_end_of_head(message, end_sequence):
+    """Retorna True si el mensaje contiene el string que demarca el final del HEAD del mensaje HTTP ('\r\n\r\n')
+    y retorna False en caso contrario.
+    """
+
     return end_sequence in message
 
 def from_http_to_data(message):
@@ -129,6 +148,7 @@ def replace_forbidden_words(http_msg, forb_words):
     """Reemplaza las palabras prohibidas en un mensaje HTTP dado una lista
     que contiene diccionarios con las palabras prohibidas y su reemplazo.
     """
+
     new_http_dict =  from_http_to_data(http_msg)
     body = new_http_dict['body']
     
