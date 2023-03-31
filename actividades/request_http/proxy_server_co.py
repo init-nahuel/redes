@@ -6,15 +6,16 @@ from utils import *
 filename = sys.argv[1]
 path = sys.argv[2]
 
+# Extraemos las uris que se encuentran prohibidas
 json_file = open(path+'/'+filename, "r")
 data = json.load(json_file)
 blocked_uris = data['blocked']
 
+# Parte tarea en que se enviaba como response un archivo html al cliente
 # f = open("index.html", "r")
-# html_file = f.read()
-# response = create_http_response(html_file)
+# response = f.read()
 
-# definimos el tamaño del buffer de recepción
+# definimos el tamaño del buffer de recepción y address
 buff_size = 50
 new_socket_address = ('localhost', 8000)
 
@@ -42,17 +43,19 @@ while True:
 
     print(f' -> Se ha recibido el siguiente mensaje: \n{message_from_client}')
 
+    # Parseamos el mensaje para obtener el host y uri
     host = get_host(from_http_to_data(message_from_client)['start_line'])
     uri = get_uri(message_from_client)
     
+    # Revisamos si es posible acceder al recurso
     if (is_available(uri, blocked_uris)):
         # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
         proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # Nos conectamos a al servidor de destino y enviamos la request
+        # Nos conectamos al servidor de destino y enviamos la request
         proxy_socket.connect((host, 80)) # Puerto 80 es el puerto por defecto para HTTP
 
-        if (host == 'cc4303.bachmann.cl'):
+        if (host == 'cc4303.bachmann.cl'): # En este caso agregamos el header requerido
             message_from_client = add_header(message_from_client, 'X-ElQuePregunta', 'Nahuel')
 
         proxy_socket.send(message_from_client.encode())
@@ -63,7 +66,8 @@ while True:
         response_from_server = receive_full_mesage_http(proxy_socket, buff_size)
 
         print(f' -> Respuesta recibida del servidor: \n{response_from_server}')
-        
+
+        # Reemplazamos las palabras prohibidas en caso de existir
         response_from_server = replace_forbidden_words(response_from_server, data['forbidden_words'])
 
         print(f' -> Respuesta del servidor filtrada: \n{response_from_server}')
@@ -74,8 +78,12 @@ while True:
         # Cerramos la conexion
         proxy_socket.close()
     else:
+        # En caso de que el recurso sea prohibido se envia un mensaje con el codigo y descripcion del error
         response_error_dict = {'start_line': "HTTP/1.1 403 Forbidden"}
         response = from_data_to_http(response_error_dict)
+        
+        print(f' -> Peticion Denegada, enviando respuesta al cliente: \n{response}')
+        
         new_socket.send(response.encode())
 
     new_socket.close()
