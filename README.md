@@ -1,6 +1,14 @@
-# Comandos utiles para redes
+# Redes
 
-## `netcat`
+La materia se divide por temas, cada uno de estos temas tiene una parte de ejemplo en donde se muestra el funcionamiento aplicado del respectivo tema:
+
+* **[DNS programado con sockets](./ejemplos_por_materia/dns_sockets/resumen.md)**
+
+Gran parte de la materia que se encuentra resumida en los ejemplos aplicados fue extraida del material perteneciente al curso de Redes, todos los creditos pertinentes van para el equipo docente :D.
+
+## Comandos utiles
+
+### `netcat`
 
 Para enviar mensajes por internet se usa **netcat** de la siguiente forma:
 
@@ -16,7 +24,7 @@ Para enviar mensajes por internet se usa **netcat** de la siguiente forma:
     nc -u host puerto
     ```
 
-## `netem`
+### `netem`
 
 Con **netem** podemos simular (y controlar) la perdida de mensajes en nuestra red de comunicacion. Al usarlo sobre localhost, usamos el comando `tc` que pertenece a `netem`. Si queremos generar un 20% de perdida de mensajes y un delay de 0.5 segundos sobre localhost (`lo`) ejecutamos:
 
