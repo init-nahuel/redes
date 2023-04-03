@@ -1,6 +1,6 @@
 import re
 
-def is_available(uri, blocked_uris):
+def is_available(uri: str, blocked_uris: list[str]) -> bool:
     """Retorna True si la uri no se encuentra en la lista de uris bloqueadas y false en
     caso contrario.
     """
@@ -10,13 +10,13 @@ def is_available(uri, blocked_uris):
             return False
     return True
 
-def get_uri(msg):
+def get_uri(msg: str) -> str:
     """Retorna la uri extraida del startline de un mensaje HTTP.
     """
     
     return msg.split(' ')[1]
 
-def get_host(message):
+def get_host(message: str) -> str:
     """Obtiene el host dado un mensaje HTTP por medio de una expresion regular 
     (utiliza el modulo re de python).
     """
@@ -28,7 +28,7 @@ def get_host(message):
     except AttributeError:
         return 'a'
 
-def content_length_header(message):
+def content_length_header(message: str) -> int:
     """Retorna -1 si el header Content-Length no se encuentra por completo en message,
     de otra forma retorna el largo declarado.
     La expresion regular se rige por el formato estandar que debiesen tener los mensajes HTTP.
@@ -38,10 +38,10 @@ def content_length_header(message):
     content_lenght = regex.search(message)
     try:
         return int(content_lenght.group(1))
-    except AttributeError:
+    except:
         return -1
 
-def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\n'):
+def receive_full_mesage_http(connection_socket, buff_size: int, end_sequence='\r\n\r\n') -> str:
     """Recibe el mensaje HTTP completo desde el cliente, primero recibe el HEAD
     y luego recibe el BODY (en caso de existir) a traves de la obtencion
     del largo de este, por ultimo retorna el mensaje HTTP decodificado.
@@ -75,14 +75,14 @@ def receive_full_mesage_http(connection_socket, buff_size, end_sequence='\r\n\r\
 
     return full_message
 
-def contains_end_of_head(message, end_sequence):
+def contains_end_of_head(message: str, end_sequence: str) -> bool:
     """Retorna True si el mensaje contiene el string que demarca el final del HEAD del mensaje HTTP ('\r\n\r\n')
     y retorna False en caso contrario.
     """
 
     return end_sequence in message
 
-def from_http_to_data(message):
+def from_http_to_data(message: str) -> dict[str, str]:
     """Retorna un diccionario con los componentes del mensaje HTTP.
     Las llaves se encuentran clasificadas en start_line, headers y body.
     Por ahora considera los separadores del formato estandar de envio de mensajes HTTP.
@@ -108,7 +108,7 @@ def from_http_to_data(message):
 
     return http_dict
 
-def from_data_to_http(http_dict):
+def from_data_to_http(http_dict: dict[str, str]) -> str:
     """Retorna un mensaje HTTP creado a partir de los componentes del diccionario.
     """
 
@@ -130,7 +130,7 @@ def from_data_to_http(http_dict):
 
     return http_message
 
-def add_header(http_message, header_name, header_content):
+def add_header(http_message: str, header_name: str, header_content: str) -> str:
     """Agrega un nuevo header a un mensaje HTTP, este nuevo header
     se encontrara justo debajo de la start-line del mensaje HTTP,
     por tanto sera el primer header.
@@ -144,7 +144,7 @@ def add_header(http_message, header_name, header_content):
     
     return new_http_msg
 
-def replace_forbidden_words(http_msg, forb_words):
+def replace_forbidden_words(http_msg: str, forb_words: list[dict[str, str]]) -> str:
     """Reemplaza las palabras prohibidas en un mensaje HTTP dado una lista
     que contiene diccionarios con las palabras prohibidas y su reemplazo.
     """
