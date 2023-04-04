@@ -1,6 +1,6 @@
 # DNS programado con sockets
 
-Antes de comenzar es importante mencionar que para comunicarse con servidores DNS se deben usar **sockets no orientados a conexion**.
+Antes de comenzar es importante mencionar que para comunicarse con servidores DNS se deben usar **sockets no orientados a conexion, adicionalmente mencionar que el flujo de trafico de DNS es anycast**.
 
 Todos los mensajes de DNS utilizan el mismo formato:
 
