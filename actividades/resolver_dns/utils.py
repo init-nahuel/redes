@@ -1,8 +1,9 @@
 from dnslib import DNSRecord, CLASS, QTYPE
 import dnslib
+import socket
 
 IP_ADDRESS = '192.33.4.12'
-PORT = 5300
+PORT = 53   
 
 # Parsear Adittional
 def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
@@ -83,3 +84,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     return dns_dict
 
 def resolver(query_msg: bytes):
+    new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    new_socket.sendto(query_msg, (IP_ADDRESS, PORT))
+    answer, _ = new_socket.recvfrom(4096)
+    print(DNSRecord.parse(answer))
