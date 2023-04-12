@@ -24,7 +24,7 @@ send_full_message(client_socket, message_with_end_sequence.encode(), end_of_mess
 print(f"Se ha enviado el mensaje contenido en: {path}")
 
 # luego de enviar el mensaje esperamos el eco
-received_message, destination_address = receive_full_mesage(client_socket, buff_size_client, end_of_message)
+received_message, destination_address = receive_full_message(client_socket, buff_size_client, end_of_message)
 
 print(f"Se ha recibido desde servidor echo: {received_message.decode()}")
 

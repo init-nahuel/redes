@@ -16,7 +16,7 @@ server_socket.bind(server_address)
 print('... Esperando clientes')
 while True:
     # luego recibimos el mensaje usando la función receive_full_mesage en su version no orientada a conexión
-    received_message, server_address = receive_full_mesage(server_socket, buff_size_server, end_of_message)
+    received_message, server_address = receive_full_message(server_socket, buff_size_server, end_of_message)
 
     print(f" -> Se ha recibido el siguiente mensaje: {received_message.decode()}")
 
