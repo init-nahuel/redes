@@ -3,9 +3,8 @@ import dnslib
 import socket
 
 IP_ADDRESS = '192.33.4.12'
-PORT = 53   
+PORT = 5300
 
-# Parsear Adittional
 def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     """Transforma el mensaje dns a un diccionario con todos los campos de este, ademas
     considera los casos para los tipos de authority o additional record. Para las secciones de
@@ -68,12 +67,13 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     additional = {}
     if arcount > 0:
         # Guardamos en el diccionario additional la seccion Adittional completa, con los campos
-        # del primer DNR record adicional
+        # del primer DNS record adicional
         additional_records_list = query_parsed.ar
         additional['additional_records_list'] = additional_records_list
         firs_additional_record = additional_records_list[0]
         additional['ar_class'] = CLASS.get(firs_additional_record.rclass) # TODO: En el item 2 este valor en el dict es 1232 (?)
         ar_type = QTYPE.get(firs_additional_record.rclass)
+        additional['ar_type'] = ar_type
 
         if ar_type == 'A': # Tipo Address
             additional['first_additional_record_rname'] = firs_additional_record.rname # Nombre de dominio
