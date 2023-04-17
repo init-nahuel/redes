@@ -1,5 +1,6 @@
 from dnslib import DNSRecord, CLASS, QTYPE
 import dnslib
+import dnslib
 import socket
 
 IP_ADDRESS = '192.33.4.12'
@@ -28,6 +29,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     dns_dict['arcount'] = arcount
     
     answer = {}
+    answer['resource_records_list'] = []
     if ancount > 0:
         # Guardamos en el diccionario answer la seccion Answer completa y tambien los campos
         # de la primera respuesta (si queremos las sigs basta con aplicar los metodos get_rname
@@ -43,6 +45,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     dns_dict['answer'] = answer
 
     authority = {}
+    authority['authority_section_list'] = []
     if nscount > 0:
         # Guardamos en el diccionario authority la seccion Authority completa
         authority_section_list = query_parsed.auth
@@ -65,6 +68,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     dns_dict['authority'] = authority
 
     additional = {}
+    additional['additional_records_list'] = []
     if arcount > 0:
         # Guardamos en el diccionario additional la seccion Adittional completa, con los campos
         # del primer DNS record adicional
@@ -83,28 +87,64 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
 
     return dns_dict
 
-def has_typeA_in_section(rr_list) -> bool:
-    """"Dada la lista de resource records obtenida con el metodo parse de la clase DNSRecord
-    retorna True si existe una respuesta de tipo A y False en caso contrario.
+def has_typeA(rr_list) -> tuple[bool, int]:
+    """"Dada la lista de RRs retorna una tupla con el valor de verdad True y el indice
+    del RR con la respuesta de tipo A en caso de existir y (False, -1) en caso contrario.
     """
 
     for rr in rr_list:
         if QTYPE.get(rr.rtype) == 'A':
-            return True
+            return (True, rr_list.index(rr))
     
-    return False
+    return (False, -1)
 
-def resolver(query_msg: bytes) -> str | bytes:
+def has_typeNS(rr_list) -> tuple[bool, int]:
+    """Dada una lista de RRs retorna una tupla con el valor de verdad False y el indice del RR
+    donde el tipo de la respuesta es distinto a NS en la seccion Authority, o (True, 0) en caso
+    contrario.
+    """
+
+    for rr in rr_list:
+        if not isinstance(rr.rdata, dnslib.dns.NS):
+            return (False, rr_list.index(rr))
+    
+    return (True, 0)
+
+
+def resolver(query_msg: bytes, new_socket: socket.socket, ip=IP_ADDRESS, ns = '.') -> str | bytes:
     response = '' # Por default la respuesta sera vacia
 
-    new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    new_socket.sendto(query_msg, (IP_ADDRESS, PORT))
+    # new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    new_socket.sendto(query_msg, (ip, PORT))
     answer, _ = new_socket.recvfrom(4096)
     parsed_answer = parse_dns_msg(answer)
 
-    if (has_typeA_in_section(parsed_answer['answer']['resource_records_list'])
-        or has_typeA_in_section(parsed_answer['authority']['authority_section_list'])
-        or has_typeA_in_section(parsed_answer['additional']['additional_records_list'])): # No necesito revisar si ancount pues la funcion tambien sirve para el caso en que ancount=0
+    domain_name = str(parsed_answer['qname'])
+    print(f"(debug) Consultando '{domain_name}' a '{ns}' con direccion IP '{ip}'")
+
+    if (has_typeA(parsed_answer['answer']['resource_records_list'])[0]):
+        # Caso answer tiene respuesta tipo A en seccion Answer
         return answer
     
-    # Sino tomar el nombre de un NS desde Authority y usar recursivamente resolver() 
+    # En caso de no obtener una respuesta de tipo A, para no ejecutar la funcion dos veces guardo el valor
+    possible_ns = has_typeNS(parsed_answer['authority']['authority_section_list'])
+    if (possible_ns[0]): # Si en cambio vienen delegacion a otro NS en Authority revisamos Additional
+
+        possible_ip = has_typeA(parsed_answer['additional']['additional_records_list'])
+        if (possible_ip[0]): # Si encontramos resp tipo A en Additional, enviamos la query a este nueva IP (recursivo nuevamente)
+            index_ip = possible_ip[1]
+            rr_with_ip = parsed_answer['additional']['additional_records_list'][index_ip]
+            new_ip = rr_with_ip.rdata
+            response = resolver(query_msg, new_socket, ip=str(new_ip), ns=rr_with_ip.rname)
+        else: # Si no encontramos IP en Additional, tomamos un NS de Authority y usamos recursivamente resolver
+            ns_index = possible_ns[1]
+            ns_rr = parsed_answer['authority']['authority_section_list'][ns_index]
+            ns_domain = ns_rr.rdata
+            new_query = DNSRecord.question(str(ns_domain))
+            response_with_ip = resolver(bytes(new_query.pack()), new_socket, ns=ns_domain)
+            parsed_response = parse_dns_msg(response_with_ip)
+            ns_ip = parsed_response['answer']['resource_records_list'][0].rdata
+            new_socket.sendto(query_msg, (str(ns_ip), PORT))
+            response, _ = new_socket.recvfrom(4096)
+
+    return response
