@@ -17,5 +17,7 @@ while True:
     response = resolver(query_msg, resolver_socket)
     if response == '':
         pass # Ke hago?
-    
+
+    print(CACHE)
+    print("<<----------------------------->>")
     new_socket.sendto(response, address_query)

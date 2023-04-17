@@ -1,10 +1,17 @@
-from dnslib import DNSRecord, CLASS, QTYPE
+from dnslib import DNSRecord, QTYPE, RR, A
 import dnslib
 import dnslib
 import socket
 
 IP_ADDRESS = '192.33.4.12'
 PORT = 53
+CACHE = {}  ## Diccionario de la forma qname, ip (key, value)
+QUERYS_20 = [] # Lista con tuplas de la forma (qname, [count, ip])
+
+# -------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
+
+# Funciones de parsing del query y 'getters'
 
 def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     """Transforma el mensaje dns a un diccionario con todos los campos de este, ademas
@@ -36,11 +43,6 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
         # sobre los demas elementos de la lista all_resource_records)
         resource_records_list = query_parsed.rr
         answer['resource_records_list'] = resource_records_list
-        # first_answer = query_parsed.get_a()
-        # answer['domain_name'] = first_answer.get_rname()
-        # answer['answer_class'] = CLASS.get(first_answer.rclass)
-        # answer['answer_type'] = QTYPE.get(first_answer.rtype)
-        # answer['answer_rdata'] = first_answer.rdata
     
     dns_dict['answer'] = answer
 
@@ -50,20 +52,6 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
         # Guardamos en el diccionario authority la seccion Authority completa
         authority_section_list = query_parsed.auth
         authority['authority_section_list'] = authority_section_list
-        
-        # if len(authority_section_list) > 0:
-        #     authority_section_RR_0 = authority_section_list[0]
-        #     authority['auth_type'] = QTYPE.get(authority_section_RR_0.rtype)
-        #     authority['auth_class'] = CLASS.get(authority_section_RR_0.rclass)
-        #     authority['auth_ttl'] = authority_section_RR_0.ttl
-        #     authority_section_0_rdata = authority_section_RR_0.rdata
-
-        #     # Clasificamos el tipo de authority
-        #     if isinstance(authority_section_0_rdata, dnslib.dns.SOA):
-        #         primary_name_server = authority_section_0_rdata.get_mname()
-        #         authority['primary_name_server'] = primary_name_server
-        #     elif isinstance(authority_section_0_rdata, dnslib.dns.NS):
-        #         authority['name_server_domain'] = authority_section_0_rdata
     
     dns_dict['authority'] = authority
 
@@ -74,20 +62,12 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
         # del primer DNS record adicional
         additional_records_list = query_parsed.ar
         additional['additional_records_list'] = additional_records_list
-        # firs_additional_record = additional_records_list[0]
-        # additional['ar_class'] = CLASS.get(firs_additional_record.rclass) # TODO: En el item 2 este valor en el dict es 1232 (?)
-        # ar_type = QTYPE.get(firs_additional_record.rclass)
-        # additional['ar_type'] = ar_type
-
-        # if ar_type == 'A': # Tipo Address
-        #     additional['first_additional_record_rname'] = firs_additional_record.rname # Nombre de dominio
-        #     additional['first_additional_record_rdata'] = firs_additional_record.rdata # IP asociada
 
     dns_dict['additional'] = additional
 
     return dns_dict
 
-def has_typeA(rr_list) -> tuple[bool, int]:
+def has_typeA(rr_list: list[RR]) -> tuple[bool, int]:
     """"Dada la lista de RRs retorna una tupla con el valor de verdad True y el indice
     del RR con la respuesta de tipo A en caso de existir y (False, -1) en caso contrario.
     """
@@ -98,7 +78,7 @@ def has_typeA(rr_list) -> tuple[bool, int]:
     
     return (False, -1)
 
-def has_typeNS(rr_list) -> tuple[bool, int]:
+def has_typeNS(rr_list: list[RR]) -> tuple[bool, int]:
     """Dada una lista de RRs retorna una tupla con el valor de verdad False y el indice del RR
     donde el tipo de la respuesta es distinto a NS en la seccion Authority, o (True, 0) en caso
     contrario.
@@ -110,11 +90,25 @@ def has_typeNS(rr_list) -> tuple[bool, int]:
     
     return (True, 0)
 
+# -------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 
-def resolver(query_msg: bytes, new_socket: socket.socket, ip=IP_ADDRESS, ns = '.') -> str | bytes:
+# Resolver
+
+def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, ns = '.') -> str | bytes:
     response = '' # Por default la respuesta sera vacia
 
-    # new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Preguntamos en cache
+    qname = str(parse_dns_msg(query_msg)['qname'])
+    if qname in CACHE:
+        ip = CACHE[qname]
+        response = modify_query(query_msg,qname ,ip)
+        update_cache(qname, ip)
+        
+        print(f"Utilizando cache para dominio '{qname}' con direccion IP asociada {ip}")
+        return response
+
+
     new_socket.sendto(query_msg, (ip, PORT))
     answer, _ = new_socket.recvfrom(4096)
     parsed_answer = parse_dns_msg(answer)
@@ -123,7 +117,9 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip=IP_ADDRESS, ns = '.
     print(f"(debug) Consultando '{domain_name}' a '{ns}' con direccion IP '{ip}'")
 
     if (has_typeA(parsed_answer['answer']['resource_records_list'])[0]):
-        # Caso answer tiene respuesta tipo A en seccion Answer
+        # Caso answer tiene respuesta tipo A en seccion Answer respondemos y actualizamos cache
+        rr = parsed_answer['answer']['resource_records_list']
+        update_cache(qname, str(rr[0].rdata))
         return answer
     
     # En caso de no obtener una respuesta de tipo A, para no ejecutar la funcion dos veces guardo el valor
@@ -136,6 +132,7 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip=IP_ADDRESS, ns = '.
             rr_with_ip = parsed_answer['additional']['additional_records_list'][index_ip]
             new_ip = rr_with_ip.rdata
             response = resolver(query_msg, new_socket, ip=str(new_ip), ns=rr_with_ip.rname)
+
         else: # Si no encontramos IP en Additional, tomamos un NS de Authority y usamos recursivamente resolver
             ns_index = possible_ns[1]
             ns_rr = parsed_answer['authority']['authority_section_list'][ns_index]
@@ -146,5 +143,60 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip=IP_ADDRESS, ns = '.
             ns_ip = parsed_response['answer']['resource_records_list'][0].rdata
             new_socket.sendto(query_msg, (str(ns_ip), PORT))
             response, _ = new_socket.recvfrom(4096)
+        
+    # Actualizamos cache
+        rr = parse_dns_msg(response)['answer']['resource_records_list'][0]
+        update_cache(qname, str(rr.rdata))
 
     return response
+
+# -------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
+
+# Funciones relacionadas con el manejo de cache
+
+def modify_query(query_msg: bytes, qname: str, ip_answer: str) -> bytes:
+    """Modifica la query agregando a la seccion Answer una lista con el resource record rr,
+    retorna una tupla con la nueva query y la ip del resource record rr.
+    """
+
+    new_query = DNSRecord.parse(query_msg)
+    print(f"qname: {qname}, rdata: {ip_answer}")
+    new_query.add_answer(RR(qname, QTYPE.A, rdata=A(ip_answer)))
+    return bytes(new_query.pack())
+
+def count_sort(t: tuple[str, tuple[int, str]]) -> int:
+    """Helper para ordenar QUERYS_20 por la cantidad de consultas al dominio.
+    """
+    
+    return t[1][0]
+
+def update_cache(qname: str, ip: str) -> None:
+    """Dado el qname y el RR asociado, realiza un update de la cache (CACHE) acorde a la cantidad de consultas
+    realizadas (limite 20), si el qname se encuentra entre las ultimas 20 querys aumentamos en 1 su respectivo contador,
+    en caso contrario si ya se han realizado mas de 20 consultas se resetea el cache, sino se agrega el qname con su contador
+    y RR a la cache.
+    """
+
+    global QUERYS_20
+    global CACHE
+    dict_querys_20 = dict(QUERYS_20)
+    if qname in dict_querys_20: # Si la consulta se encuentra entre las ultimas 20 consultas recibidas aumentamos su respectivo contador
+        QUERYS_20[QUERYS_20.index((qname, [dict_querys_20[qname][0], dict_querys_20[qname][1]]))][1][0] += 1 # Aumentamos la cantidad de veces que se repite
+        QUERYS_20.sort(reverse=True, key=count_sort)
+    else: # Si no se encuentra existe un caso de interes
+        if len(QUERYS_20) >= 20: # Si llegamos al limite de las 20 ultimas consultas vaciamos la lista con estas consultas para empezar de nuevo a crear la cache
+            QUERYS_20 = []
+        QUERYS_20.append((qname, [1, ip]))
+    
+    # Actualizamos la cache
+    CACHE = {}
+    for i in range(len(QUERYS_20)):
+        if i>=5:
+            return
+        
+        qname, t = QUERYS_20[i]
+        CACHE[qname] = t[1]
+
+    print(CACHE)
+    print(QUERYS_20)
