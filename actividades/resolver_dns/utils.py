@@ -95,7 +95,13 @@ def has_typeNS(rr_list: list[RR]) -> tuple[bool, int]:
 
 # Resolver
 
+# Esta tomando el qname por lo que en cache se toma mas veces de lo que se consulta qname
+
 def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, ns = '.') -> str | bytes:
+    """Toma una query y la envia a la ip dada mediante el socket entregado como parametro,
+    retorna la query con la respuesta entregada por la ip de consulta.
+    """
+
     response = '' # Por default la respuesta sera vacia
 
     # Preguntamos en cache
@@ -117,9 +123,12 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
     print(f"(debug) Consultando '{domain_name}' a '{ns}' con direccion IP '{ip}'")
 
     if (has_typeA(parsed_answer['answer']['resource_records_list'])[0]):
-        # Caso answer tiene respuesta tipo A en seccion Answer respondemos y actualizamos cache
-        rr = parsed_answer['answer']['resource_records_list']
-        update_cache(qname, str(rr[0].rdata))
+        # Caso answer tiene respuesta tipo A en seccion Answer respondemo
+        
+        if ns == '.': # Solo actualizamos cache en la primera consulta no en las consultas recurivas para busqueda
+            rr = parsed_answer['answer']['resource_records_list']
+            update_cache(qname, str(rr[0].rdata))
+        
         return answer
     
     # En caso de no obtener una respuesta de tipo A, para no ejecutar la funcion dos veces guardo el valor
@@ -145,8 +154,9 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
             response, _ = new_socket.recvfrom(4096)
         
     # Actualizamos cache
-        rr = parse_dns_msg(response)['answer']['resource_records_list'][0]
-        update_cache(qname, str(rr.rdata))
+        if ns == '.': # Solo actualizamos cache en la primera consulta no en las consultas recurivas para busqueda
+            rr = parse_dns_msg(response)['answer']['resource_records_list'][0]
+            update_cache(qname, str(rr.rdata))
 
     return response
 
