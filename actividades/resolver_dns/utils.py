@@ -1,6 +1,5 @@
 from dnslib import DNSRecord, QTYPE, RR, A
 import dnslib
-import dnslib
 import socket
 
 IP_ADDRESS = '192.33.4.12'
@@ -14,10 +13,9 @@ QUERYS_20 = [] # Lista con tuplas de la forma (qname, [count, ip])
 # Funciones de parsing del query y 'getters'
 
 def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
-    """Transforma el mensaje dns a un diccionario con todos los campos de este, ademas
-    considera los casos para los tipos de authority o additional record. Para las secciones de
-    Answer, Authority y Additional se guarda toda la seccion y ademas los campos del primer 
-    elemento de cada una en un diccionario con el nombre de la seccion como llave respectivamente.
+    """Transforma el mensaje dns a un diccionario con los campos QNAME, ANCOUNT, NSCOUNT,
+    ARCOUNT y las secciones Answer, Authority y Additional. Para las secciones de
+    Answer, Authority y Additional se guarda una lista de resource records.
     """
 
     query_parsed = DNSRecord.parse(dns_msg)
@@ -38,9 +36,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     answer = {}
     answer['resource_records_list'] = []
     if ancount > 0:
-        # Guardamos en el diccionario answer la seccion Answer completa y tambien los campos
-        # de la primera respuesta (si queremos las sigs basta con aplicar los metodos get_rname
-        # sobre los demas elementos de la lista all_resource_records)
+        # Guardamos en el diccionario answer la seccion Answer completa (lista de resource records)
         resource_records_list = query_parsed.rr
         answer['resource_records_list'] = resource_records_list
     
@@ -49,7 +45,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     authority = {}
     authority['authority_section_list'] = []
     if nscount > 0:
-        # Guardamos en el diccionario authority la seccion Authority completa
+        # Guardamos en el diccionario authority la seccion Authority completa (lista de resource records)
         authority_section_list = query_parsed.auth
         authority['authority_section_list'] = authority_section_list
     
@@ -58,8 +54,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     additional = {}
     additional['additional_records_list'] = []
     if arcount > 0:
-        # Guardamos en el diccionario additional la seccion Adittional completa, con los campos
-        # del primer DNS record adicional
+        # Guardamos en el diccionario additional la seccion Adittional completa (lista de resource records)
         additional_records_list = query_parsed.ar
         additional['additional_records_list'] = additional_records_list
 
@@ -68,7 +63,7 @@ def parse_dns_msg(dns_msg: bytes) -> dict[str, str | int | dict]:
     return dns_dict
 
 def has_typeA(rr_list: list[RR]) -> tuple[bool, int]:
-    """"Dada la lista de RRs retorna una tupla con el valor de verdad True y el indice
+    """Dada la lista de RRs retorna una tupla con el valor de verdad True y el indice
     del RR con la respuesta de tipo A en caso de existir y (False, -1) en caso contrario.
     """
 
@@ -167,8 +162,7 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
 # Funciones relacionadas con el manejo de cache
 
 def modify_query(query_msg: bytes, qname: str, ip_answer: str) -> bytes:
-    """Modifica la query agregando a la seccion Answer una lista con el resource record rr,
-    retorna una tupla con la nueva query y la ip del resource record rr.
+    """Modifica la query agregando a la seccion Answer el RR con la ip de respuesta.
     """
 
     new_query = DNSRecord.parse(query_msg)
@@ -183,10 +177,10 @@ def count_sort(t: tuple[str, tuple[int, str]]) -> int:
     return t[1][0]
 
 def update_cache(qname: str, ip: str) -> None:
-    """Dado el qname y el RR asociado, realiza un update de la cache (CACHE) acorde a la cantidad de consultas
+    """Dado el qname y la ip asociada, realiza un update de la cache (CACHE) acorde a la cantidad de consultas
     realizadas (limite 20), si el qname se encuentra entre las ultimas 20 querys aumentamos en 1 su respectivo contador,
     en caso contrario si ya se han realizado mas de 20 consultas se resetea el cache, sino se agrega el qname con su contador
-    y RR a la cache.
+    y ip a la cache.
     """
 
     global QUERYS_20
