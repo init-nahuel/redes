@@ -95,9 +95,7 @@ def has_typeNS(rr_list: list[RR]) -> tuple[bool, int]:
 
 # Resolver
 
-# Esta tomando el qname por lo que en cache se toma mas veces de lo que se consulta qname
-
-def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, ns = '.') -> str | bytes:
+def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, ns = '.') -> bytes:
     """Toma una query y la envia a la ip dada mediante el socket entregado como parametro,
     retorna la query con la respuesta entregada por la ip de consulta.
     """
@@ -110,8 +108,9 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
         ip = CACHE[qname]
         response = modify_query(query_msg,qname ,ip)
         update_cache(qname, ip)
-        
-        print(f"Utilizando cache para dominio '{qname}' con direccion IP asociada {ip}")
+        print("<<----------------------------->>")
+        print(f"(debug) Utilizando cache para dominio '{qname}' con direccion IP asociada {ip}")
+        print("<<----------------------------->>")
         return response
 
 
@@ -120,7 +119,9 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
     parsed_answer = parse_dns_msg(answer)
 
     domain_name = str(parsed_answer['qname'])
+    print("<<----------------------------->>")
     print(f"(debug) Consultando '{domain_name}' a '{ns}' con direccion IP '{ip}'")
+    print("<<----------------------------->>")
 
     if (has_typeA(parsed_answer['answer']['resource_records_list'])[0]):
         # Caso answer tiene respuesta tipo A en seccion Answer respondemo
@@ -207,6 +208,3 @@ def update_cache(qname: str, ip: str) -> None:
         
         qname, t = QUERYS_20[i]
         CACHE[qname] = t[1]
-
-    print(CACHE)
-    print(QUERYS_20)
