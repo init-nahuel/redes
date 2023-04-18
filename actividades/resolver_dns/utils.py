@@ -118,12 +118,13 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
     print(f"(debug) Consultando '{domain_name}' a '{ns}' con direccion IP '{ip}'")
     print("<<----------------------------->>")
 
-    if (has_typeA(parsed_answer['answer']['resource_records_list'])[0]):
-        # Caso answer tiene respuesta tipo A en seccion Answer respondemo
+    possible_ip = has_typeA(parsed_answer['answer']['resource_records_list'])
+    if (possible_ip[0]):
+        # Caso answer tiene respuesta tipo A en seccion Answer respondemos
         
         if ns == '.': # Solo actualizamos cache en la primera consulta no en las consultas recurivas para busqueda
-            rr = parsed_answer['answer']['resource_records_list']
-            update_cache(qname, str(rr[0].rdata))
+            rr = parsed_answer['answer']['resource_records_list'][possible_ip[1]]
+            update_cache(qname, str(rr.rdata))
         
         return answer
     
@@ -166,7 +167,6 @@ def modify_query(query_msg: bytes, qname: str, ip_answer: str) -> bytes:
     """
 
     new_query = DNSRecord.parse(query_msg)
-    print(f"qname: {qname}, rdata: {ip_answer}")
     new_query.add_answer(RR(qname, QTYPE.A, rdata=A(ip_answer)))
     return bytes(new_query.pack())
 
