@@ -15,6 +15,7 @@ while True:
     resolver_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # Creamos el socket del resolver
     response = resolver(query_msg, resolver_socket)  # Procesamos la query con el resolver
     print("<<----------------------------->>")
-    print(f"(debug) Respuesta recibida por resolver, enviando a IP: {address_query}")
+    ip = parse_dns_msg(response)['answer']['resource_records_list'][0].rdata
+    print(f"(debug) Respuesta recibida IP por resolver: {ip}, enviando a direccion: {address_query}")
     print("<<----------------------------->>")
     new_socket.sendto(response, address_query) # Enviamos la respuesta del resolver a la direccion de donde llego la query
