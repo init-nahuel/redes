@@ -122,7 +122,7 @@ def resolver(query_msg: bytes, new_socket: socket.socket, ip: str = IP_ADDRESS, 
     if (possible_ip[0]):
         # Caso answer tiene respuesta tipo A en seccion Answer respondemos
         
-        if ns == '.': # Solo actualizamos cache en la primera consulta no en las consultas recurivas para busqueda
+        if ns == '.': # Solo actualizamos cache en la primera consulta no en las consultas recursivas para busqueda
             rr = parsed_answer['answer']['resource_records_list'][possible_ip[1]]
             update_cache(qname, str(rr.rdata))
         
