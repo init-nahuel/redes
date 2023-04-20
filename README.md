@@ -43,3 +43,34 @@ Para detener el efecto de perdida y/o de delay de mensajes se ejecuta:
 ```bash
 tc qdisc del dev lo root netem
 ```
+
+### `curl` (HTTP)
+
+El comando `curl` funciona como cliente HTTP para texto permitiendonos crear de forma facil y rapida clientes para probar servidores HTTP, `curl` puede ser ocupado de la siguiente forma:
+
+```bash
+% curl [domain] -flag
+```
+
+* Donde `flag` son las flags que podemos utilizar, las mas comunes son `I` para traer solo los headers, `L` que entrega informacion siguiendo las redirecciones y `x` que le permite ocupar un proxy para la consulta, en este caso el uso es de la siguiente manera:
+
+```bash
+% curl [domain] -x [direccion]:[puerto]
+```
+
+### `dig` (DNS)
+
+El comando `dig` (**Domain Information Groper**) nos permite hacer consultas DNS y nos muestra la respuesta de la consulta, por lo que es especialmente util para probar el funcionamiento de un resolver. Para hacer consultas DNS con `dig` a un resolver corriendo en una IP y puerto especificos se puede usar el siguiente comando:
+
+```bash
+% dig -[puerto] @[ip] [domain]
+```
+
+Ejemplo:
+
+```bash
+% dig -p8000 @localhost example.com
+% dig @8.8.8.8 www.uchile.cl
+```
+
+* En el caso en que no se especifica puerto es porque se esta preguntando al resolver de Google.
