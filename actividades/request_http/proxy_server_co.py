@@ -51,6 +51,7 @@ while True:
     if (is_available(uri, blocked_uris)):
         # Creamos el socket con el cual nuestro proxy se conectara al servidor de destino
         proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print(f"  ->Conectandose al host: {host}")
 
         # Nos conectamos al servidor de destino y enviamos la request
         proxy_socket.connect((host, 80)) # Puerto 80 es el puerto por defecto para HTTP
