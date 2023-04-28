@@ -18,7 +18,8 @@ def get_uri(msg: str) -> str:
 
 def get_host(message: str) -> str:
     """Obtiene el host dado un mensaje HTTP por medio de una expresion regular 
-    (utiliza el modulo re de python).
+    (utiliza el modulo re de python), en caso de obtener coincidencia,
+    retorna el string vacio.
     """
 
     regex = re.compile(r"http://((\w+|\.)*(.com|.cl))")
@@ -26,7 +27,7 @@ def get_host(message: str) -> str:
     try:
         return str(uri.group(1))
     except AttributeError:
-        return 'a'
+        return ''
 
 def content_length_header(message: str) -> int:
     """Retorna -1 si el header Content-Length no se encuentra por completo en message,
