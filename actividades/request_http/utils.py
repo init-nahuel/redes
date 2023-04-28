@@ -22,7 +22,7 @@ def get_host(message: str) -> str:
     retorna el string vacio.
     """
 
-    regex = re.compile(r"http://((\w+|\.)*(.com|.cl))")
+    regex = re.compile(r"http://((\w+|\.)*(.com|.cl|.ch))")
     uri = regex.search(message)
     try:
         return str(uri.group(1))
