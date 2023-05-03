@@ -1,0 +1,3 @@
+Dado que los programas implementan TCP se espera que el archivo sea recibido por el programa receptor de manera íntegra.
+Para probar su implementación defina que el máximo tamaño de paquete (sin incluir headers) es de 16 bytes, por lo tanto cualquier comunicación que supere esa cantidad de bytes debe ser dividida en múltiples paquetes. Se sugiere cargar todo el archivo a memoria y usarlo como un arreglo de caracteres/bytes para dividirlo más fácilmente en paquetes. 
+Recuerde que usted debe implementar TCP junto a todo lo que necesite, como timeouts y mensajes ACK.
