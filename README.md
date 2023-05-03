@@ -4,7 +4,15 @@ La materia se divide por temas, cada uno de estos temas tiene una parte de ejemp
 
 * **[DNS programado con sockets](./ejemplos_por_materia/dns_sockets/resumen.md)**
 
-Gran parte de la materia que se encuentra resumida en los ejemplos aplicados fue extraida del material perteneciente al curso de Redes, todos los creditos pertinentes van para el equipo docente :D.
+Gran parte de la materia que se encuentra que resumida en los ejemplos aplicados fue extraida del material perteneciente al curso de Redes, todos los creditos pertinentes van para el equipo docente :D.
+
+Aca se encuentran las auxiliares realizadas durante el semestre de Otonho 2023:
+
+* **[HTTP](./auxiliares/01_http.md)**
+* **[Proxies y Conexiones Persistentes](./auxiliares/02_proxies_conexiones_persistentes.md)**
+* **[DNS Parte 1](./auxiliares/03_dns_I.md)**
+* **[DNS Parte 2](./auxiliares/04_dns_II.md)**
+* **[Capa de Transporte](./auxiliares/05_capa_de_transporte.md)**
 
 ## Comandos utiles
 
