@@ -201,3 +201,9 @@ class SocketTCP:
             print("----> Handshake erroneo, se esperaba recibir ACK, rechanzando...")
 
             return None
+
+    def send(self, message: str):
+        pass
+
+    def recv(buff_size: int):
+        pass
