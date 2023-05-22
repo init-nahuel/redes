@@ -297,6 +297,32 @@ class SocketTCP:
         """Recibe un maximo buff_size de datos enviados a traves del socketTCP.
         """
 
-        byte_buffer, _ = self.udp_socket.recvfrom(16)
+        while True:
+            byte_buffer, _ = self.udp_socket.recvfrom(DATA_LEN)
+            header = byte_buffer.decode()
+            parsed_header = self.parse_segment(header)
+            # Obtenemos largo del mensaje que recibiremos
+            msg_len = parsed_header['DATA']
+            new_seq = parsed_header['SEQ'] + msg_len
 
-        ack_message = self.make_tcp_headers(0, 1, 0, n)
+            print(
+                f"----> Recibido header con largo del mensaje que se enviara por Cliente\nLargo: {msg_len} Header: {header}")
+
+            verifier_seq = self.verify_inc_seq(new_seq, self.seq)
+
+            if (verifier_seq[0]):
+                ack_message = self.make_tcp_headers(0, 1, 0, new_seq)
+            else:
+                ack_message = self.make_tcp_headers(0, 1, 0, self.seq)
+
+            print(f"Enviando ACK confirmacion a Cliente: {ack_message}")
+
+            self.udp_socket.sendto(ack_message.encode(), self.dest_address)
+
+            # Si recibimos correctamente el mensaje se termina el loop,
+            # si en cambio recibimos un mensaje con SEQ menor quiere decir que
+            # el cliente no recibio nuestro ACK, por tanto seguimos en el loop para reenviar nuevamente ACK
+            if (verifier_seq[0]):
+                break
+
+        self._send(buff_size)
