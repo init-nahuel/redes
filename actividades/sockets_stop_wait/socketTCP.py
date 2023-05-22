@@ -2,16 +2,27 @@ from __future__ import annotations
 import socket
 import random
 
+# Indica el largo maximo del tamanho del mensaje que se enviara/recibira, este largo
+# incluye el largo del header adicionalmente
+DATA_LEN = 50
+
 
 class SocketTCP:
     def __init__(self) -> None:
-        self.dest_address = None
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.dest_address = None
         self.orig_address = None
         self.seq = None
         self.parsed_buffer = None
         self.header_buffer = None
         self.content_buffer = None
+
+        # Timeout (5 segundos)
+        self.timeout = 5
+
+        # Registro cantidad de datos enviados/leidos
+        self.sended_data_len = 0
+        self.readed_data_len = 0
 
     @staticmethod
     def parse_segment(msg: str) -> dict[str, str]:
@@ -202,8 +213,90 @@ class SocketTCP:
 
             return None
 
-    def send(self, message: str):
-        pass
+    def _send(self, message: bytes) -> None:
+        """Se encarga de enviar el contenido del mensaje como tal, manejando
+        adecuadamente la excepcion de timeout.
+        """
 
-    def recv(buff_size: int):
-        pass
+        message_length = len(message)
+
+        # Preguntamos si el largo de message es menor al buffer message
+        msg_short = True if message_length <= 16 else False
+
+        while (self.sended_data_len < message_length):
+            # Recalculamos pues cambia en cada iteracion
+            msg_short = True if message_length <= 16 else False
+
+            header = self.make_tcp_headers(0, 0, 0, self.seq) + '|||'
+            send_msg = header.encode()
+
+            if msg_short:
+                send_msg += message
+                print(
+                    f"----> Enviando mensaje a Servidor:\n{header}" + str(message))
+            else:
+                send_msg += message[:16]
+                print(
+                    f"----> Enviando mensaje a Servidor:\n{header}" + str(message[:16]))
+
+            self.udp_socket.sendto(send_msg)
+
+            try:  # Intentamos recibir el mensaje ACK por Servidor
+                self.udp_socket.settimeout(self.timeout)
+                ack_message, _ = self.udp_socket.recvfrom(16)
+                ack_message = ack_message.decode()
+                new_seq = self.parse_segment(ack_message)['SEQ']
+
+                verifier_seq = self.verify_inc_seq(new_seq, self.seq)
+                if (verifier_seq[0]):  # Verificamos que el numero de secuencia sea correcto
+                    print(f"----> Recibido ACK por Servidor: {ack_message}")
+                    self.seq = new_seq
+                    # En caso de rebicir, eliminamos lo enviado
+                    if (msg_short):
+                        self.sended_data_len += message_length
+                    else:
+                        self.sended_data_len += 16
+                        message = message[self.sended_data_len:]
+            except socket.timeout:
+                print(
+                    "----> Respuesta ACK del Servidor NO RECIBIDA, intentando nuevamente")
+                self._send(message[self.sended_data_len:])
+
+    def send(self, message: bytes) -> None:
+        """Envia el contenido de message a traves del socketTCP.
+        """
+
+        message_length = len(message)
+
+        # Enviamos largo del mensaje
+        header_and_content = self.make_tcp_headers(
+            0, 0, 0, self.seq, message_length)
+        self.udp_socket.sendto(message, self.dest_address)
+        print(
+            f"----> Enviando largo del mensaje a Servidor: {header_and_content}")
+
+        try:  # Intentamos recibir el mensaje ACK por Servidor
+            self.udp_socket.settimeout(5)
+            ack_message, _ = self.udp_socket.recvfrom(16)
+            ack_message = ack_message.decode()
+            print(f"----> Recibido ACK por Servidor: {ack_message}")
+        except socket.timeout:  # En caso contrario enviamos nuevamente el mensaje
+            print("----> Respuesta ACK del Servidor NO RECIBIDA, intentando nuevamente")
+            self.send(message)
+
+        # Enviamos el mensaje
+        self._send(message)
+
+    def _recv(self, buff_size: int) -> None:
+        """Se encarga de recibir el contenido del mensaje como tal, manejando
+        adecuadamente la excepcion timeout.
+        """
+        ...
+
+    def recv(self, buff_size: int) -> None:
+        """Recibe un maximo buff_size de datos enviados a traves del socketTCP.
+        """
+
+        byte_buffer, _ = self.udp_socket.recvfrom(16)
+
+        ack_message = self.make_tcp_headers(0, 1, 0, n)
