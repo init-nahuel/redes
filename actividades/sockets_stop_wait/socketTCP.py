@@ -17,6 +17,9 @@ class SocketTCP:
         self.header_buffer = None
         self.content_buffer = bytes()
 
+        # Data restante que se recibe el socket cuando buff_size es menor que 16 bytes
+        self.remaining_data = bytes() 
+
         # Timeout (5 segundos)
         self.timeout = 5
 
@@ -233,10 +236,12 @@ class SocketTCP:
         while (self.readed_data_len < self.sended_data_len):
             header = self.make_tcp_headers(0, 0, 0, self.seq) + '|||'
             send_msg = header.encode()
-            send_msg += message[self.readed_data_len:min(
-                self.sended_data_len - self.readed_data_len, 16)]
+            content = message[self.readed_data_len:self.readed_data_len + min(self.sended_data_len - self.readed_data_len, 16)]
+            send_msg += content
 
             self.udp_socket.sendto(send_msg, self.dest_address)
+
+            print(f"----> Enviando mensaje a Servidor, Contenido: {content}")
 
             try:
                 self._manage_timeout()
@@ -279,25 +284,56 @@ class SocketTCP:
         adecuadamente la recepcion de mensajes duplicados.
         """
 
-        min_value = min(self.sended_data_len, buff_size, 16)
+        min_value = min(self.sended_data_len - self.readed_data_len, buff_size)
+
+        self.content_buffer = bytes()
 
         while (self.readed_data_len != min_value):
+
+            if (self.readed_data_len == self.sended_data_len): # Caso leimos todo lo que se envio
+                break
+
             # Calculo largo header, puede variar debido al largo del numero SEQ
             header_len = 15 + int(len(str(self.seq)))
 
-            buffer_recv, _ = self.udp_socket.recvfrom(min_value + header_len)
+            # Recibo los 16 bytes fijo que envia el emisor
+            buffer_recv, _ = self.udp_socket.recvfrom(16 + header_len)
             parsed_header = self.parse_segment(
                 buffer_recv[:header_len].decode())
             new_seq = int(parsed_header['SEQ'])
 
             if (self.seq == new_seq):
-                self.content_buffer += buffer_recv[header_len:]
-                # Incrementamos SEQ por el largo del contenido recibido
-                self.seq += min_value
-                self.readed_data_len += min_value
+                recv_data = buffer_recv[header_len:]
+                len_recv_data = len(recv_data)
+                len_rem_data = len(self.remaining_data)
+                if (len_recv_data + len_rem_data <= buff_size):
+                    self.content_buffer += self.remaining_data + recv_data
+
+                    # Reseteamos el buffer de bytes restantes
+                    self.remaining_data = bytes()
+
+                    len_readed = len_recv_data + len_rem_data
+                    self.readed_data_len += len_readed
+                    # Incrementamos SEQ por el contenido leido
+                    self.seq += len_readed
+                else: # len_recv_data + len_rem_data > buff_size
+                    # Existen dos casos posibles
+                    if (len_rem_data >= buff_size):
+                        self.content_buffer += self.remaining_data[:buff_size]
+                        self.remaining_data = self.remaining_data[buff_size:] + recv_data
+                        self.readed_data_len += buff_size
+                        self.seq += buff_size
+                    else: # len_recv_data + len_rem_data > buff_size
+                        self.content_buffer += self.remaining_data + recv_data[:buff_size-len_rem_data]
+                        self.remaining_data = recv_data[buff_size-len_rem_data:]
+                        self.readed_data_len += buff_size
+                        self.seq += buff_size
+                
                 ack_header = self.make_tcp_headers(0, 1, 0, self.seq)
 
                 print(f"----> Recibido mensaje Cliente: {self.content_buffer}")
+
+                print(f"----> Enviando ACK a Cliente: {ack_header}")
 
                 self.udp_socket.sendto(ack_header.encode(), self.dest_address)
             else:  # Caso recibimos mensaje repetido (no llego ACK al cliente)
@@ -316,7 +352,7 @@ class SocketTCP:
 
         while True:
             # Caso en que se llama a recv pero todavia no se ha recibido el mensaje completo
-            if (self.readed_data_len < self.sended_data_len):
+            if (self.sended_data_len - self.readed_data_len > 0):
                 break
 
             # Vaciamos el buffer en caso de que se esta llamando recv para recibir un mensaje nuevo
