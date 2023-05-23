@@ -38,3 +38,7 @@ if (message_part_1 + message_part_2) == "Mensaje de largo 19".encode():
     print("Test 3: Passed")
 else:
     print("Test 3: Failed")
+
+print("-----------Cierre de Conexion-----------")
+connection_socketTCP.recv_close()
+print("-----------Cierre de Conexion-----------")
