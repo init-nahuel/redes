@@ -211,57 +211,41 @@ class SocketTCP:
 
             return None
 
+    def _manage_timeout(self):
+        try:
+            self.udp_socket.settimeout(self.timeout)
+            ack_msg, _ = self.udp_socket.recvfrom(16)
+            ack_msg = ack_msg.decode()
+            new_seq = int(self.parse_segment(ack_msg)['SEQ'])
+            self.seq = new_seq
+            print(f"----> Recibido ACK por Servidor: {ack_msg}")
+        except socket.timeout:
+            print(
+                f"----> No se recibio respuesta del servidor durante el timeout: {self.timeout}, intentando nuevamente")
+            raise socket.timeout
+
     def _send(self, message: bytes) -> None:
         """Se encarga de enviar el contenido del mensaje como tal, manejando
         adecuadamente la excepcion de timeout.
         """
 
-        original_msg_len = len(message)
-
-        while (self.sended_data_len < original_msg_len):
-            # Preguntamos si el largo de message es menor al limite de 16 bytes de envio para el contenido
-            message_length = len(message)
-            msg_short = True if message_length <= 16 else False
-
+        self.sended_data_len = len(message)
+        while (self.readed_data_len < self.sended_data_len):
             header = self.make_tcp_headers(0, 0, 0, self.seq) + '|||'
             send_msg = header.encode()
-
-            if msg_short:
-                send_msg += message
-                print(
-                    f"----> Enviando mensaje a Servidor:\n{header}" + str(message))
-            else:
-                send_msg += message[:16]
-                print(
-                    f"----> Enviando mensaje a Servidor:\n{header}" + str(message[:16]))
+            send_msg += message[self.readed_data_len:min(
+                self.sended_data_len - self.readed_data_len, 16)]
 
             self.udp_socket.sendto(send_msg, self.dest_address)
 
-            try:  # Intentamos recibir el mensaje ACK por Servidor
-                self.udp_socket.settimeout(self.timeout)
-                ack_message, _ = self.udp_socket.recvfrom(16)
-                ack_message = ack_message.decode()
-                new_seq = int(self.parse_segment(ack_message)['SEQ'])
-
-                verifier_seq = self.verify_inc_seq(new_seq, self.seq)
-                if (verifier_seq[0]):  # Verificamos que el numero de secuencia sea correcto
-                    print(f"----> Recibido ACK por Servidor: {ack_message}")
-                    self.seq = new_seq
-                    # En caso de rebicir, eliminamos lo enviado
-                    if (msg_short):
-                        # En este caso no eliminamos pues al sumar el resto que quedaba por enviar la
-                        # condicion del ciclo no volvera a cumplirse
-                        self.sended_data_len += message_length
-                    else:
-                        self.sended_data_len += 16
-                        message = message[16:]
+            try:
+                self._manage_timeout()
+                self.readed_data_len += min(self.sended_data_len -
+                                            self.readed_data_len, 16)
             except socket.timeout:
-                print(
-                    "----> Respuesta ACK del Servidor NO RECIBIDA, intentando nuevamente")
-                self._send(message)
-
-        # Restablecemos los valores
-        self.sended_data_len = 0
+                # self._send(message)
+                # Deberia funcionar continue pues al final todo depende de self.readed_data_len, este no cambia si lanza excepcion
+                continue
 
         return None
 
@@ -271,6 +255,10 @@ class SocketTCP:
 
         message_length = len(message)
 
+        # Establecemos el largo que debe leer (y lo que ha leido) y enviar el socket
+        self.sended_data_len = message_length
+        self.readed_data_len = 0
+
         # Enviamos largo del mensaje
         header_and_len_msg = self.make_tcp_headers(
             0, 0, 0, self.seq, message_length)
@@ -279,14 +267,8 @@ class SocketTCP:
             f"----> Enviando largo del mensaje a Servidor: {header_and_len_msg}")
 
         try:  # Intentamos recibir el mensaje ACK por Servidor
-            self.udp_socket.settimeout(5)
-            ack_message, _ = self.udp_socket.recvfrom(16)
-            ack_message = ack_message.decode()
-            new_seq = int(self.parse_segment(ack_message)['SEQ'])
-            self.seq = new_seq
-            print(f"----> Recibido ACK por Servidor: {ack_message}")
+            self._manage_timeout()
         except socket.timeout:  # En caso contrario enviamos nuevamente el mensaje
-            print("----> Respuesta ACK del Servidor NO RECIBIDA, intentando nuevamente")
             self.send(message)
 
         # Enviamos el mensaje
@@ -297,64 +279,34 @@ class SocketTCP:
         adecuadamente la recepcion de mensajes duplicados.
         """
 
-        diff = self.sended_data_len - self.readed_data_len
+        min_value = min(self.sended_data_len, buff_size, 16)
 
-        # Calculo largo header, puede variar debido al largo del numero SEQ
-        header_len = 15 + int(len(str(self.seq)))
+        while (self.readed_data_len != min_value):
+            # Calculo largo header, puede variar debido al largo del numero SEQ
+            header_len = 15 + int(len(str(self.seq)))
 
-        if (diff <= buff_size):
-            buffer_byte, _ = self.udp_socket.recvfrom(diff + header_len)
-
+            buffer_recv, _ = self.udp_socket.recvfrom(min_value + header_len)
             parsed_header = self.parse_segment(
-                buffer_byte[:header_len].decode())
-            self.content_buffer += buffer_byte[header_len:]
+                buffer_recv[:header_len].decode())
             new_seq = int(parsed_header['SEQ'])
 
             if (self.seq == new_seq):
-                # Incrementamos SEQ por el largo del contenido
-                msg_data_len = len(buffer_byte) - header_len
-                self.seq += msg_data_len
-                self.readed_data_len += msg_data_len
+                self.content_buffer += buffer_recv[header_len:]
+                # Incrementamos SEQ por el largo del contenido recibido
+                self.seq += min_value
+                self.readed_data_len += min_value
+                ack_header = self.make_tcp_headers(0, 1, 0, self.seq)
+
+                print(f"----> Recibido mensaje Cliente: {self.content_buffer}")
+
+                self.udp_socket.sendto(ack_header.encode(), self.dest_address)
+            else:  # Caso recibimos mensaje repetido (no llego ACK al cliente)
                 ack_header = self.make_tcp_headers(0, 1, 0, self.seq)
 
                 print(
-                    f"----> Recibido mensaje Cliente (cabe en buffsize): {self.content_buffer}")
+                    f"----> Mensaje repetido recibido desde Cliente, probablemente ultimo ACK perdido, reenviando: {ack_header}")
 
                 self.udp_socket.sendto(ack_header.encode(), self.dest_address)
-            else:  # Caso Cliente no recibio nuestro ultimo ACK
-                ack_header = self.make_tcp_headers(0, 1, 0, self.seq)
-                self.udp_socket.sendto(ack_header.encode(), self.dest_address)
-
-                print(
-                    f"----> Mensaje recibido del Cliente repetido, probablemente se perdio ultimo ACK, reenviando:\n{ack_header}")
-
-                self._recv(buff_size)
-        else:  # Caso diff > buffsize
-            buffer_byte, _ = self.udp_socket.recvfrom(
-                header_len + buff_size)  # Recibo como maximo el buffsize de datos
-            parsed_header = self.parse_segment(
-                buffer_byte[:header_len].decode())
-            self.content_buffer += buffer_byte[header_len:]
-            new_seq = int(parsed_header['SEQ'])
-
-            if (self.seq == new_seq):
-                # Incrementamos SEQ por el largo de buff_size que es el maximo que podemos recibir
-                self.seq += buff_size
-                self.readed_data_len += buff_size
-                ack_header = self.make_tcp_headers(0, 1, 0, self.seq)
-
-                print(
-                    f"----> Recibido mensaje Cliente (tamanho {buff_size}): {self.content_buffer}")
-
-                self.udp_socket.sendto(ack_header.encode(), self.dest_address)
-            else:  # Caso Cliente no recibio nuestro ultimo ACK
-                ack_header = self.make_tcp_headers(0, 1, 0, self.seq)
-                self.udp_socket.sendto(ack_header.encode(), self.dest_address)
-
-                print(
-                    f"----> Mensaje recibido del Cliente repetido, probablemente se perdio ultimo ACK, reenviando:\n{ack_header}")
-
-                self._recv(buff_size)
 
         return None
 
