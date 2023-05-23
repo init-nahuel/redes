@@ -1,7 +1,17 @@
-import socket
+import socketTCP
 
-my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+address = ('localhost', 8000)
 
-address = ('localhost', 5000)
+client_socketTCP = socketTCP.SocketTCP()
+client_socketTCP.connect(address)
 
-my_socket.sendto('0|||1|||1|||121|||'.encode() + '1234'.encode(), address)
+# test 1
+message = "Mensje de len=16".encode()
+client_socketTCP.send(message)
+
+# test 2
+message = "Mensaje de largo 19".encode()
+client_socketTCP.send(message)
+# test 3
+message = "Mensaje de largo 19".encode()
+client_socketTCP.send(message)
