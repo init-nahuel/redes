@@ -3,7 +3,10 @@ import socketTCP
 address = ('localhost', 8000)
 
 client_socketTCP = socketTCP.SocketTCP()
+
+print("-----------Handshake-----------")
 client_socketTCP.connect(address)
+print("-----------Handshake-----------")
 
 # test 1
 message = "Mensje de len=16".encode()
