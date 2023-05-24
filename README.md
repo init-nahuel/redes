@@ -3,6 +3,7 @@
 La materia se divide por temas, cada uno de estos temas tiene una parte de ejemplo en donde se muestra el funcionamiento aplicado del respectivo tema:
 
 * **[DNS programado con sockets](./ejemplos_por_materia/dns_sockets/resumen.md)**
+* [**Selective Repeat**](./ejemplos_por_materia/selective_repeat/resumen.md)
 
 Gran parte de la materia que se encuentra que resumida en los ejemplos aplicados fue extraida del material perteneciente al curso de Redes, todos los creditos pertinentes van para el equipo docente :D.
 
