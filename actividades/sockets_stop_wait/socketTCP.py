@@ -73,6 +73,14 @@ class SocketTCP:
         diff = new_seq - actual_seq
         return (diff >= 0, diff)
 
+    @staticmethod
+    def is_valid_header(parsed_header: dict[str, str], syn: int, ack: int, fin: int) -> bool:
+        """Retorna True si el header parseado parsed_header posee las flags syn, ack, fin activa o desactivada.
+        Retorna False caso contrario.
+        """
+
+        return syn == int(parsed_header['SYN']) and ack == int(parsed_header['ACK']) and fin == int(parsed_header['FIN'])
+
     def bind(self, address: tuple[str, int]):
         """Aisgna una direccion de origen (IP, Puerto) al socket SocketTCP.
         """
@@ -395,3 +403,83 @@ class SocketTCP:
         self._recv(buff_size)
 
         return self.content_buffer
+
+    def close(self) -> None:
+        """Comienza el cierro de conexion.
+        """
+
+        # Enviamos mensaje FIN
+        fin_header = self.make_tcp_headers(0, 0, 1, self.seq)
+        self.udp_socket.sendto(fin_header.encode(), self.dest_address)
+
+        print(f"----> Enviando mensaje FIN a la otra parte: {fin_header}")
+
+        # Recibimos mensaje FIN+ACK
+        ack_msg, _ = self.udp_socket.recvfrom(16)
+        ack_msg = ack_msg.decode()
+        parsed_ack = self.parse_segment(ack_msg)
+        new_seq = int(parsed_ack['SEQ'])
+
+        if (new_seq - self.seq == 1 and self.is_valid_header(parsed_ack, 0, 1, 1)):
+            self.seq = new_seq
+            ack_msg = self.make_tcp_headers(0, 1, 0, self.seq + 1)
+
+            print(f"----> Recibido mensaje FIN+ACK: {ack_msg}")
+
+            self.udp_socket.sendto(ack_msg.encode(), self.dest_address)
+
+            print(f"----> Enviando mensaje ACK a la otra parte: {ack_msg}")
+        else:
+            print(f"----> Numeros de secuencias erroneos.")
+
+            return None
+
+        print(f"----> Finalizo la comunicacion")
+        self.udp_socket.close()
+
+        return None
+
+    def recv_close(self):
+        """"Continua el cierre de conexion, comenzado por la otra parte de la comunicacion.
+        """
+
+        # Recibimos mensaje FIN
+
+        fin_msg, _ = self.udp_socket.recvfrom(16)
+        fin_msg = fin_msg.decode()
+        parsed_fin = self.parse_segment(fin_msg)
+        fin_seq = int(parsed_fin['SEQ'])
+
+        if (fin_seq == self.seq and self.is_valid_header(parsed_fin, 0, 0, 1)):
+
+            print(f"----> Recibido mensaje de FIN: {fin_msg}")
+
+            # Envio mensaje FIN+ACK
+            fin_ack_msg = self.make_tcp_headers(0, 1, 1, self.seq + 1)
+            self.udp_socket.sendto(fin_ack_msg.encode(), self.dest_address)
+
+            print(f"----> Enviando mensaje FIN+ACK: {fin_ack_msg}")
+
+            # Recibo mensaje ACK
+            ack_msg, _ = self.udp_socket.recvfrom(16)
+            ack_msg = ack_msg.decode()
+            parsed_ack = self.parse_segment(ack_msg)
+            new_seq = int(parsed_ack['SEQ'])
+
+            if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(parsed_ack, 0, 1, 0)):
+
+                print(f"----> Recibido mensaje ACK: {ack_msg}")
+
+                self.seq = new_seq
+                print(f"----> Finalizo la comunicacion")
+                self.udp_socket.close()
+
+                return None
+
+            else:
+                print(f"----> Numeros de secuencias erroneos.")
+                return None
+
+        else:
+            print(f"----> Numeros de secuencias erroneos.")
+            return None
