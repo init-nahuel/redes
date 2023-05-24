@@ -81,6 +81,23 @@ class SocketTCP:
 
         return syn == int(parsed_header['SYN']) and ack == int(parsed_header['ACK']) and fin == int(parsed_header['FIN'])
 
+    def _manage_timeout(self):
+        """Maneja el recibo de mensajes ACK desde Servidor, en caso de no recibir lanza nuevamente
+        la excepcion socket.timeout.
+        """
+
+        try:
+            self.udp_socket.settimeout(self.timeout)
+            ack_msg, _ = self.udp_socket.recvfrom(16)
+            ack_msg = ack_msg.decode()
+            new_seq = int(self.parse_segment(ack_msg)['SEQ'])
+            self.seq = new_seq
+            print(f"----> Recibido ACK por Servidor: {ack_msg}")
+        except socket.timeout:
+            print(
+                f"----> No se recibio respuesta del servidor durante el timeout: {self.timeout}, intentando nuevamente")
+            raise socket.timeout
+
     def bind(self, address: tuple[str, int]):
         """Aisgna una direccion de origen (IP, Puerto) al socket SocketTCP.
         """
@@ -90,7 +107,7 @@ class SocketTCP:
 
     def connect(self, address) -> int:
         """Establece el 3-way handshake entre el socket SocketTCP cliente y
-        el servidor ubicado en la direction de destino address
+        el servidor ubicado en la direccion de destino address
         en la que se encuentra escuchando. Retorna 1 en caso de establecerse correctamente
         el handshake y 0 en caso contrario.
         """
@@ -221,19 +238,6 @@ class SocketTCP:
             print("----> Handshake erroneo, se esperaba recibir ACK, rechanzando...")
 
             return None
-
-    def _manage_timeout(self):
-        try:
-            self.udp_socket.settimeout(self.timeout)
-            ack_msg, _ = self.udp_socket.recvfrom(16)
-            ack_msg = ack_msg.decode()
-            new_seq = int(self.parse_segment(ack_msg)['SEQ'])
-            self.seq = new_seq
-            print(f"----> Recibido ACK por Servidor: {ack_msg}")
-        except socket.timeout:
-            print(
-                f"----> No se recibio respuesta del servidor durante el timeout: {self.timeout}, intentando nuevamente")
-            raise socket.timeout
 
     def _send(self, message: bytes) -> None:
         """Se encarga de enviar el contenido del mensaje como tal, manejando
