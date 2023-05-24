@@ -13,6 +13,7 @@ Aca se encuentran las auxiliares realizadas durante el semestre de Otonho 2023:
 * **[DNS Parte 1](./auxiliares/03_dns_I.md)**
 * **[DNS Parte 2](./auxiliares/04_dns_II.md)**
 * **[Capa de Transporte](./auxiliares/05_capa_de_transporte.md)**
+* **[Comunicacion Confiable](./auxiliares/06_comunicacion_confiable.md)**
 
 ## Comandos utiles
 
