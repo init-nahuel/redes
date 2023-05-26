@@ -134,11 +134,10 @@ class SocketTCP:
 
         self.dest_address = new_socket_address
         self.parsed_buffer = self.parse_segment(self.header_buffer)
-        syn, ack, fin, new_seq = [int(val)
-                                  for val in self.parsed_buffer.values()]
+        new_seq = int(self.parsed_buffer['SEQ'])
 
         # En verify_seq_3way sumamos 1 pues en el primer SYN del Cliente va el SEQ sin incremento
-        if (self.verify_seq_3way(new_seq + 1, self.seq) and syn == 1 and ack == 1 and fin == 0):
+        if (self.verify_seq_3way(new_seq + 1, self.seq) and self.is_valid_header(self.parsed_buffer, 1, 1, 0)):
             self.seq = new_seq
 
             # Envio ACK Cliente
@@ -160,10 +159,9 @@ class SocketTCP:
             f"----> Recibido mensaje ACK por Servidor, paso Stop & Wait: {self.header_buffer}")
 
         self.parsed_buffer = self.parse_segment(self.header_buffer)
-        syn, ack, fin, new_seq = [int(val)
-                                  for val in self.parsed_buffer.values()]
+        new_seq = int(self.parsed_buffer['SEQ'])
 
-        if (self.verify_seq_3way(new_seq, self.seq) and syn == 0 and ack == 1 and fin == 0):
+        if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(self.parsed_buffer, 0, 1, 0)):
             self.seq = new_seq
 
             status = 1
@@ -190,19 +188,17 @@ class SocketTCP:
 
         new_socket.parsed_buffer = new_socket.parse_segment(
             new_socket.header_buffer)
-        new_socket.seq = int(new_socket.parsed_buffer['SEQ']) + 1
-        syn, ack, fin, _ = [int(val)
-                            for val in new_socket.header_buffer.split('|||')]
+        new_socket.seq = int(new_socket.parsed_buffer['SEQ'])
 
-        if (syn == 1 and ack == 0 and fin == 0):
+        if (self.is_valid_header(new_socket.parsed_buffer, 1, 0, 0)):
             new_socket.header_buffer = new_socket.make_tcp_headers(
-                1, 1, 0, new_socket.seq)
+                1, 1, 0, new_socket.seq + 1)
 
             # Envio SYN+ACK
             print(
                 f"----> Enviando mensaje SYN+ACK a Cliente: {new_socket.header_buffer}")
             new_socket.udp_socket.sendto(
-                new_socket.header_buffer.encode(), client_address)
+                new_socket.header_buffer.encode(), new_socket.dest_address)
 
         else:
             print(
@@ -213,14 +209,14 @@ class SocketTCP:
         # Recibo ACK Cliente
         new_socket.header_buffer, _ = new_socket.udp_socket.recvfrom(16)
         new_socket.header_buffer = new_socket.header_buffer.decode()
-        print(
-            f"----> Recibido mensaje ACK por Cliente: {new_socket.header_buffer}")
 
         new_socket.parsed_buffer = new_socket.parse_segment(
             new_socket.header_buffer)
-        syn, ack, fin, new_seq = [int(val)
-                                  for val in new_socket.header_buffer.split('|||')]
-        if (syn == 0 and ack == 1 and fin == 0 and new_socket.verify_seq_3way(new_seq + 1, new_socket.seq)):
+        new_seq = int(new_socket.parsed_buffer['SEQ'])
+
+        if (self.is_valid_header(new_socket.parsed_buffer, 0, 1, 0) and new_socket.verify_seq_3way(new_seq, new_socket.seq)):  # sin +1
+            print(
+                f"----> Recibido mensaje ACK por Cliente: {new_socket.header_buffer}")
             new_socket.seq = new_seq
 
             # Envio ACK (Stop & Wait)
