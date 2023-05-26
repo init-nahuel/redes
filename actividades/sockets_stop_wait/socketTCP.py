@@ -431,6 +431,14 @@ class SocketTCP:
 
         return self.content_buffer
 
+    def free_space(self) -> None:
+        """Asigna las variables a sus valores por default y cierra el socket.
+        """
+
+        self.seq = None
+        self.udp_socket.close()
+        self.udp_socket = None
+
     def close(self) -> None:
         """Comienza el cierre de conexion. Envia mensaje FIN con el timeout definido tres veces, en caso de recibir
         respuesta envia el ACK con un timeout tres veces, en caso contrario asume que la comunicacion fue cerrada
@@ -445,6 +453,7 @@ class SocketTCP:
             if (timeout_counter == 3):  # Esperamos 3 timeouts
                 print(
                     "----> Asumiendo que la otra parte cerro conexion, cerrando conexion...")
+                self.free_space()
 
                 return None
 
@@ -468,6 +477,7 @@ class SocketTCP:
                     break
                 else:
                     print(f"----> Numeros de secuencias erroneos, cerrando conexion...")
+                    self.free_space()
 
                     return None
             except socket.timeout:
@@ -484,7 +494,7 @@ class SocketTCP:
                 continue
 
         print(f"----> Comunicacion finalizada.")
-        self.udp_socket.close()
+        self.free_space()
 
         return None
 
@@ -499,10 +509,9 @@ class SocketTCP:
         while True:
             if (timeout_counter == 3):
                 print(
-                    "----> Asumiendo que la otra parte cerro conexion, cerrando conexion...")
+                    "----> Timeout finalizado no se recibio FIN, asumiendo que la otra parte cerro conexion, cerrando conexion...")
+                self.free_space()
 
-                self.udp_socket.close()
-                self.seq = None
                 return None
 
             # Recibimos mensaje FIN
@@ -520,14 +529,21 @@ class SocketTCP:
                     break
                 else:
                     print("----> Numeros de secuencias erroneos, cerrando conexion...")
-                    self.seq = None
+                    self.free_space()
 
                     return None
             except socket.timeout:
                 timeout_counter += 1
                 continue
 
-        for _ in range(3):
+        while True:
+            if (timeout_counter == 3):
+                print(
+                    "----> Timeout finalizado, no se recibio ACK, asumiendo que la otra parte cerro conexion, cerrando conexion...")
+                self.free_space()
+
+                return None
+
             # Envio mensaje FIN+ACK
             fin_ack_msg = self.make_tcp_headers(0, 1, 1, self.seq + 1)
             self.udp_socket.sendto(fin_ack_msg.encode(), self.dest_address)
@@ -543,20 +559,22 @@ class SocketTCP:
                 new_seq = int(parsed_ack['SEQ'])
 
                 if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(parsed_ack, 0, 1, 0)):
+                    self.free_space()
 
                     print(f"----> Recibido mensaje ACK: {ack_msg}")
-
-                    self.seq = None
-                    self.udp_socket.close()
-
                     print("----> Comunicacion finalizada.")
 
                     return None
+                elif (self.is_valid_header(parsed_ack, 0, 0, 1)):
+                    print(
+                        f"----> Recibido nuevamente mensaje FIN, probable perdida de mensaje FIN+ACK: {ack_msg}")
+                    continue
                 else:
                     print(f"----> Numeros de secuencias erroneos, cerrando conexion...")
-                    self.udp_socket.close()
+                    self.free_space()
 
                     return None
             except socket.timeout:
                 print("---> Tratando de recibir ACK nuevamente")
+                timeout_counter += 1
                 continue
