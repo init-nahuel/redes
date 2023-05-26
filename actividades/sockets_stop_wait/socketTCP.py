@@ -165,6 +165,7 @@ class SocketTCP:
 
             try:
                 # Recibo ACK Servidor (Stop & Wait)
+                self.udp_socket.settimeout(self.timeout)
                 self.header_buffer, _ = self.udp_socket.recvfrom(16)
                 self.header_buffer = self.header_buffer.decode()
                 print(
@@ -396,17 +397,17 @@ class SocketTCP:
             byte_buffer, _ = self.udp_socket.recvfrom(DATA_LEN)
             header = byte_buffer.decode()
             parsed_header = self.parse_segment(header)
-            # Obtenemos largo del mensaje que recibiremos
-            msg_len = int(parsed_header['DATA'])
             new_seq = int(parsed_header['SEQ'])
-
-            print(
-                f"----> Recibido header con largo del mensaje que se enviara por Cliente\nLargo: {msg_len} Header: {header}")
 
             verifier_seq = self.verify_inc_seq(new_seq, self.seq)
 
             # Caso en que el SEQ recibido es mayor, modificamos nuestro SEQ
             if (verifier_seq[0]):
+                # Obtenemos largo del mensaje que recibiremos
+                msg_len = int(parsed_header['DATA'])
+
+                print(
+                    f"----> Recibido header con largo del mensaje que se enviara por Cliente\nLargo: {msg_len} Header: {header}")
                 self.seq = new_seq + msg_len
                 self.sended_data_len = msg_len
                 # Reseteamos el valor en caso de haber llamado send anteriormente
@@ -415,7 +416,7 @@ class SocketTCP:
             # Enviamos el header con el ACK y nuestro SEQ, ya sea que el Cliente no recibio el anterior
             # o si lo recibio, el cambio del SEQ del Servidor se encuentra en el if de arriba
             ack_message = self.make_tcp_headers(0, 1, 0, self.seq)
-            print(f"Enviando ACK confirmacion a Cliente: {ack_message}")
+            print(f"----> Enviando ACK confirmacion a Cliente: {ack_message}")
 
             self.udp_socket.sendto(ack_message.encode(), self.dest_address)
 
@@ -431,81 +432,131 @@ class SocketTCP:
         return self.content_buffer
 
     def close(self) -> None:
-        """Comienza el cierre de conexion.
+        """Comienza el cierre de conexion. Envia mensaje FIN con el timeout definido tres veces, en caso de recibir
+        respuesta envia el ACK con un timeout tres veces, en caso contrario asume que la comunicacion fue cerrada
+        por la otra parte.
         """
 
         # Enviamos mensaje FIN
         fin_header = self.make_tcp_headers(0, 0, 1, self.seq)
-        self.udp_socket.sendto(fin_header.encode(), self.dest_address)
+        timeout_counter = 0
 
-        print(f"----> Enviando mensaje FIN a la otra parte: {fin_header}")
+        while True:
+            if (timeout_counter == 3):  # Esperamos 3 timeouts
+                print(
+                    "----> Asumiendo que la otra parte cerro conexion, cerrando conexion...")
 
-        # Recibimos mensaje FIN+ACK
-        ack_msg, _ = self.udp_socket.recvfrom(16)
-        ack_msg = ack_msg.decode()
-        parsed_ack = self.parse_segment(ack_msg)
-        new_seq = int(parsed_ack['SEQ'])
+                return None
 
-        if (new_seq - self.seq == 1 and self.is_valid_header(parsed_ack, 0, 1, 1)):
-            self.seq = new_seq
-            ack_msg = self.make_tcp_headers(0, 1, 0, self.seq + 1)
+            self.udp_socket.sendto(fin_header.encode(), self.dest_address)
 
-            print(f"----> Recibido mensaje FIN+ACK: {ack_msg}")
+            print(f"----> Enviando mensaje FIN a la otra parte: {fin_header}")
 
-            self.udp_socket.sendto(ack_msg.encode(), self.dest_address)
+            try:
+                # Recibimos mensaje FIN+ACK
+                self.udp_socket.settimeout(self.timeout)
+                ack_msg, _ = self.udp_socket.recvfrom(16)
+                ack_msg = ack_msg.decode()
+                parsed_ack = self.parse_segment(ack_msg)
+                new_seq = int(parsed_ack['SEQ'])
 
-            print(f"----> Enviando mensaje ACK a la otra parte: {ack_msg}")
-        else:
-            print(f"----> Numeros de secuencias erroneos.")
+                if (self.verify_inc_seq(new_seq, self.seq)[0] and self.is_valid_header(parsed_ack, 0, 1, 1)):
+                    self.seq = new_seq
 
-            return None
+                    print(f"----> Recibido mensaje FIN+ACK: {ack_msg}")
 
-        print(f"----> Finalizo la comunicacion")
+                    break
+                else:
+                    print(f"----> Numeros de secuencias erroneos, cerrando conexion...")
+
+                    return None
+            except socket.timeout:
+                timeout_counter += 1
+                continue
+
+        for _ in range(3):
+            try:
+                self.udp_socket.settimeout(self.timeout)
+                ack_msg = self.make_tcp_headers(0, 1, 0, self.seq + 1)
+                self.udp_socket.sendto(ack_msg.encode(), self.dest_address)
+                print(f"----> Enviando mensaje ACK a la otra parte: {ack_msg}")
+            except socket.timeout:
+                continue
+
+        print(f"----> Comunicacion finalizada.")
         self.udp_socket.close()
 
         return None
 
     def recv_close(self):
-        """"Continua el cierre de conexion, comenzado por la otra parte de la comunicacion.
+        """"Continua el cierre de conexion, comenzado por la otra parte que llamo a close().
         """
 
-        # Recibimos mensaje FIN
+        # Como la otra parte al llamar a close() envia el FIN 3 veces entre cada timeout, esta parte
+        # tambien puede a lo mas esperar a recibir el FIN en tres timeouts, despues simplemente considera que la conexion se cerro
+        timeout_counter = 0
 
-        fin_msg, _ = self.udp_socket.recvfrom(16)
-        fin_msg = fin_msg.decode()
-        parsed_fin = self.parse_segment(fin_msg)
-        fin_seq = int(parsed_fin['SEQ'])
+        while True:
+            if (timeout_counter == 3):
+                print(
+                    "----> Asumiendo que la otra parte cerro conexion, cerrando conexion...")
 
-        if (fin_seq == self.seq and self.is_valid_header(parsed_fin, 0, 0, 1)):
+                self.udp_socket.close()
+                self.seq = None
+                return None
 
-            print(f"----> Recibido mensaje de FIN: {fin_msg}")
+            # Recibimos mensaje FIN
+            try:
+                self.udp_socket.settimeout(self.timeout)
+                fin_msg, _ = self.udp_socket.recvfrom(16)
+                fin_msg = fin_msg.decode()
+                parsed_fin = self.parse_segment(fin_msg)
+                fin_seq = int(parsed_fin['SEQ'])
 
+                if (fin_seq == self.seq and self.is_valid_header(parsed_fin, 0, 0, 1)):
+
+                    print(f"----> Recibido mensaje de FIN: {fin_msg}")
+                    timeout_counter = 0
+                    break
+                else:
+                    print("----> Numeros de secuencias erroneos, cerrando conexion...")
+                    self.seq = None
+
+                    return None
+            except socket.timeout:
+                timeout_counter += 1
+                continue
+
+        for _ in range(3):
             # Envio mensaje FIN+ACK
             fin_ack_msg = self.make_tcp_headers(0, 1, 1, self.seq + 1)
             self.udp_socket.sendto(fin_ack_msg.encode(), self.dest_address)
 
             print(f"----> Enviando mensaje FIN+ACK: {fin_ack_msg}")
 
-            # Recibo mensaje ACK
-            ack_msg, _ = self.udp_socket.recvfrom(16)
-            ack_msg = ack_msg.decode()
-            parsed_ack = self.parse_segment(ack_msg)
-            new_seq = int(parsed_ack['SEQ'])
+            try:
+                # Recibo mensaje ACK
+                self.udp_socket.settimeout(self.timeout)
+                ack_msg, _ = self.udp_socket.recvfrom(16)
+                ack_msg = ack_msg.decode()
+                parsed_ack = self.parse_segment(ack_msg)
+                new_seq = int(parsed_ack['SEQ'])
 
-            if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(parsed_ack, 0, 1, 0)):
+                if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(parsed_ack, 0, 1, 0)):
 
-                print(f"----> Recibido mensaje ACK: {ack_msg}")
+                    print(f"----> Recibido mensaje ACK: {ack_msg}")
 
-                self.seq = None
-                print(f"----> Finalizo la comunicacion")
-                self.udp_socket.close()
+                    self.seq = None
+                    self.udp_socket.close()
 
-                return None
+                    print("----> Comunicacion finalizada.")
 
-            else:
-                print(f"----> Numeros de secuencias erroneos.")
-                return None
+                    return None
+                else:
+                    print(f"----> Numeros de secuencias erroneos, cerrando conexion...")
+                    self.udp_socket.close()
 
-        else:
-            print(f"----> Numeros de secuencias erroneos.")
-            return None
+                    return None
+            except socket.timeout:
+                print("---> Tratando de recibir ACK nuevamente")
+                continue
