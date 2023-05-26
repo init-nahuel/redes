@@ -284,8 +284,6 @@ class SocketTCP:
                 self.readed_data_len += min(self.sended_data_len -
                                             self.readed_data_len, 16)
             except socket.timeout:
-                # self._send(message)
-                # Deberia funcionar continue pues al final todo depende de self.readed_data_len, este no cambia si lanza excepcion
                 continue
 
         return None
