@@ -115,8 +115,6 @@ class SocketTCP:
         self.seq = random.randint(0, 100)
         self.dest_address = address
 
-        status = 0
-
         # 3-way handshake
 
         # Envio mensaje SYN Cliente
@@ -124,22 +122,39 @@ class SocketTCP:
 
         print(
             f"----> Enviando mensaje SYN a Servidor: {self.header_buffer}")
-        self.udp_socket.sendto(self.header_buffer.encode(), self.dest_address)
 
-        # Recibo SYN+ACK Servidor
-        self.header_buffer, new_socket_address = self.udp_socket.recvfrom(16)
-        self.header_buffer = self.header_buffer.decode()
-        print(
-            f"----> Recibido mensaje SYN+ACK desde Servidor: {self.header_buffer}")
+        while True:
+            # Enviamos el SYN dentro del loop pues en caso de que este se pierda, no recibiremos respuesta de Servidor.
+            # Asimismo si se pierde la respuesta pero el SYN llega aun asi deberemos enviarlo nuevamente para notificar al Servidor (y el manejara la respuesta)
+            self.udp_socket.sendto(
+                self.header_buffer.encode(), self.dest_address)
+            try:
+                # Recibo SYN+ACK Servidor
+                self.udp_socket.settimeout(self.timeout)
+                self.header_buffer, new_socket_address = self.udp_socket.recvfrom(
+                    16)
+                self.header_buffer = self.header_buffer.decode()
+                print(
+                    f"----> Recibido mensaje SYN+ACK desde Servidor: {self.header_buffer}")
 
-        self.dest_address = new_socket_address
-        self.parsed_buffer = self.parse_segment(self.header_buffer)
-        new_seq = int(self.parsed_buffer['SEQ'])
+                self.dest_address = new_socket_address
+                self.parsed_buffer = self.parse_segment(self.header_buffer)
+                new_seq = int(self.parsed_buffer['SEQ'])
 
-        # En verify_seq_3way sumamos 1 pues en el primer SYN del Cliente va el SEQ sin incremento
-        if (self.verify_seq_3way(new_seq + 1, self.seq) and self.is_valid_header(self.parsed_buffer, 1, 1, 0)):
-            self.seq = new_seq
+                # En verify_seq_3way sumamos 1 pues en el primer SYN del Cliente va el SEQ sin incremento
+                if (self.verify_seq_3way(new_seq + 1, self.seq) and self.is_valid_header(self.parsed_buffer, 1, 1, 0)):
+                    self.seq = new_seq
+                    break
+                else:
+                    print(f"----> Header invalido, cancelando conexion...")
 
+                    return 0
+            except socket.timeout:
+                print(
+                    f"----> No se recibio respuesta del servidor durante el timeout: {self.timeout}, intentando nuevamente")
+                continue
+
+        while True:  # Caso recibimos el SYN+ACK correctamente, seguimos ahora enviando el ACK
             # Envio ACK Cliente
             self.header_buffer = self.make_tcp_headers(0, 1, 0, self.seq + 1)
 
@@ -147,28 +162,28 @@ class SocketTCP:
                 f"----> Enviando mensaje ACK de confirmacion a Servidor: {self.header_buffer}")
             self.udp_socket.sendto(
                 self.header_buffer.encode(), self.dest_address)
-        else:
-            print("----> Posible infiltracion en la conexion, cerrando...")
 
-            return status
+            try:
+                # Recibo ACK Servidor (Stop & Wait)
+                self.header_buffer, _ = self.udp_socket.recvfrom(16)
+                self.header_buffer = self.header_buffer.decode()
+                print(
+                    f"----> Recibido mensaje ACK por Servidor, paso Stop & Wait: {self.header_buffer}")
 
-        # Recibo ACK Servidor (Stop & Wait)
-        self.header_buffer, _ = self.udp_socket.recvfrom(16)
-        self.header_buffer = self.header_buffer.decode()
-        print(
-            f"----> Recibido mensaje ACK por Servidor, paso Stop & Wait: {self.header_buffer}")
+                self.parsed_buffer = self.parse_segment(self.header_buffer)
+                new_seq = int(self.parsed_buffer['SEQ'])
+                if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(self.parsed_buffer, 0, 1, 0)):
+                    self.seq = new_seq
 
-        self.parsed_buffer = self.parse_segment(self.header_buffer)
-        new_seq = int(self.parsed_buffer['SEQ'])
+                    return 1
+                else:
+                    print(f"----> Header invalido, cancelando conexion...")
 
-        if (self.verify_seq_3way(new_seq, self.seq) and self.is_valid_header(self.parsed_buffer, 0, 1, 0)):
-            self.seq = new_seq
-
-            status = 1
-            return status
-        else:
-
-            return status
+                    return 0
+            except socket.timeout:
+                print(
+                    f"----> No se recibio respuesta del servidor durante el timeout: {self.timeout}, intentando nuevamente")
+                continue
 
     def accept(self) -> tuple[SocketTCP, tuple[str, int]] | None:
         """Establece el 3-way handshake entre el socket SocketTCP Servidor y el cliente.
@@ -207,33 +222,44 @@ class SocketTCP:
             return None
 
         # Recibo ACK Cliente
-        new_socket.header_buffer, _ = new_socket.udp_socket.recvfrom(16)
-        new_socket.header_buffer = new_socket.header_buffer.decode()
+        while True:
+            new_socket.header_buffer, _ = new_socket.udp_socket.recvfrom(16)
+            new_socket.header_buffer = new_socket.header_buffer.decode()
 
-        new_socket.parsed_buffer = new_socket.parse_segment(
-            new_socket.header_buffer)
-        new_seq = int(new_socket.parsed_buffer['SEQ'])
+            new_socket.parsed_buffer = new_socket.parse_segment(
+                new_socket.header_buffer)
+            new_seq = int(new_socket.parsed_buffer['SEQ'])
 
-        if (self.is_valid_header(new_socket.parsed_buffer, 0, 1, 0) and new_socket.verify_seq_3way(new_seq, new_socket.seq)):  # sin +1
-            print(
-                f"----> Recibido mensaje ACK por Cliente: {new_socket.header_buffer}")
-            new_socket.seq = new_seq
+            if (self.is_valid_header(new_socket.parsed_buffer, 0, 1, 0) and new_socket.verify_seq_3way(new_seq, new_socket.seq)):
+                print(
+                    f"----> Recibido mensaje ACK por Cliente: {new_socket.header_buffer}")
+                new_socket.seq = new_seq
 
-            # Envio ACK (Stop & Wait)
-            new_socket.header_buffer = new_socket.make_tcp_headers(
-                0, 1, 0, new_socket.seq + 1)
-            print(
-                f"----> Enviando mensaje ACK a Cliente, paso Stop & Wait: {new_socket.header_buffer}")
+                # Envio ACK (Stop & Wait)
+                new_socket.header_buffer = new_socket.make_tcp_headers(
+                    0, 1, 0, new_socket.seq + 1)
+                print(
+                    f"----> Enviando mensaje ACK a Cliente, paso Stop & Wait: {new_socket.header_buffer}")
 
-            new_socket.udp_socket.sendto(
-                new_socket.header_buffer.encode(), client_address)
+                new_socket.udp_socket.sendto(
+                    new_socket.header_buffer.encode(), client_address)
 
-            # Devolvemos nueva instancia de SocketTCP
-            return (new_socket, new_socket.orig_address)
-        else:
-            print("----> Handshake erroneo, se esperaba recibir ACK, rechanzando...")
+                # Devolvemos nueva instancia de SocketTCP
+                return (new_socket, new_socket.orig_address)
+            elif (self.is_valid_header(self.parsed_buffer, 1, 0, 0)):
+                # Caso nos llega nuevamente el mensaje SYN de Cliente -> no llego nuestro SYN+ACK
+                new_socket.header_buffer = new_socket.make_tcp_headers(
+                    1, 1, 0, new_socket.seq + 1)
 
-            return None
+                print(
+                    f"----> Enviando nuevamente SYN+ACK, no recibido por Cliente probablemente: {new_socket.header_buffer}")
+                new_socket.udp_socket.sendto(
+                    new_socket.header_buffer.encode(), new_socket.dest_address)
+                continue
+            else:
+                print("----> Handshake erroneo, se esperaba recibir ACK, rechazando...")
+
+                return None
 
     def _send(self, message: bytes) -> None:
         """Se encarga de enviar el contenido del mensaje como tal, manejando
@@ -405,7 +431,7 @@ class SocketTCP:
         return self.content_buffer
 
     def close(self) -> None:
-        """Comienza el cierro de conexion.
+        """Comienza el cierre de conexion.
         """
 
         # Enviamos mensaje FIN
@@ -470,7 +496,7 @@ class SocketTCP:
 
                 print(f"----> Recibido mensaje ACK: {ack_msg}")
 
-                self.seq = new_seq
+                self.seq = None
                 print(f"----> Finalizo la comunicacion")
                 self.udp_socket.close()
 
