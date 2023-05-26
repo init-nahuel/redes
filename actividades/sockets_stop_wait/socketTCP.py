@@ -385,7 +385,7 @@ class SocketTCP:
 
         return None
 
-    def recv(self, buff_size: int) -> None:
+    def recv(self, buff_size: int) -> bytes:
         """Recibe un maximo buff_size de datos enviados a traves del socketTCP.
         """
 
