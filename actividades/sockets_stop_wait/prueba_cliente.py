@@ -1,6 +1,11 @@
 import socketTCP
+import sys
 
-address = ('localhost', 8000)
+_, ip, port = sys.argv
+file = input()
+
+# address = ('localhost', 8000)
+address = (ip, int(port))
 
 client_socketTCP = socketTCP.SocketTCP()
 
@@ -19,6 +24,9 @@ client_socketTCP.send(message)
 # test 3
 message = "Mensaje de largo 19".encode()
 client_socketTCP.send(message)
+
+# test file
+client_socketTCP.send(file.encode())
 
 print("-----------Cierre de Conexion-----------")
 client_socketTCP.close()
