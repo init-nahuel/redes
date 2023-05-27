@@ -368,6 +368,8 @@ class SocketTCP:
                     f"----> Mensaje repetido recibido desde Cliente, probablemente ultimo ACK perdido, reenviando: {ack_header}")
 
                 self.udp_socket.sendto(ack_header.encode(), self.dest_address)
+
+        # Reducimos el largo de la data que nos enviaron segun lo leido para asi al volver a llamar recv poder cumplir la condicion del loop
         self.sended_data_len -= self.readed_data_len
         self.readed_data_len = 0
         return None
@@ -397,7 +399,7 @@ class SocketTCP:
                     f"----> Recibido header con largo del mensaje que se enviara por Cliente\nLargo: {msg_len} Header: {header}")
                 self.seq = new_seq + msg_len
                 self.sended_data_len = msg_len
-                # Reseteamos el valor en caso de haber llamado send anteriormente
+                # Reseteamos el valor en caso de haber llamado send anteriormente, y reseteamos el container de data remanente (este debiese de encontrarse vacio)
                 self.readed_data_len = 0
                 self.remaining_data = bytes()
 
