@@ -2,8 +2,8 @@ from __future__ import annotations
 import socket
 import random
 
-# Indica el largo maximo del tamanho del mensaje que se enviara/recibira, este largo
-# incluye el largo del header adicionalmente
+# Indica el largo maximo del tamanho del mensaje que se recibira, como este se envia en un string codificado, el numero
+# que indica el tamanho del archivo tendra DATA_LEN digitos
 DATA_LEN = 50
 
 
@@ -383,7 +383,8 @@ class SocketTCP:
             if (self.sended_data_len > 0):
                 break
 
-            byte_buffer, _ = self.udp_socket.recvfrom(DATA_LEN)
+            header_len = 15 + int(len(str(self.seq)))
+            byte_buffer, _ = self.udp_socket.recvfrom(header + DATA_LEN)
             header = byte_buffer.decode()
             parsed_header = self.parse_segment(header)
             new_seq = int(parsed_header['SEQ'])
