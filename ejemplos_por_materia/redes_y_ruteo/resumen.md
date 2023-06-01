@@ -10,13 +10,13 @@ En nuestro mini-Internet simularemos una red de forma local sobre una unica IP p
 
 ## Headers
 
-Similar a las actividades de TCP simplificado, usaremos nuestra propia estructura de headers. Esto facilitara un poco las cosas pues acceder a los headers IP de los sockets requiere permisos de administrados y/o conocimiento extenso de bajo nivel. Para esta actividad usaremos la siguiente estructura para nuestros paquetes IP:
+Similar a las actividades de TCP simplificado, usaremos nuestra propia estructura de headers. Esto facilitara un poco las cosas pues acceder a los headers IP de los sockets requiere permisos de administrador y/o conocimiento extenso de bajo nivel. Para esta actividad usaremos la siguiente estructura para nuestros paquetes IP:
 
 ```bash
 [Direccion IP],[Puerto],[mensaje]
 ```
 
-Donde la `[Direccion IP]` y el `[Puerto]` corresponden al par (IP, puerto) en el cual se encuentra escuchando el router de destino del `[mensaje]` (recuerde que su router se simula con un socket UDP asociado al par (IP, puerto)). De esta forma si, por ejemplo, tenemos el router R1 asociado a (127.0.0.1, 8881) y le enviamos el paquete `127.0.0.1, 8881, hola` usando netcat de la siguiente forma:
+Donde la `[Direccion IP]` y el `[Puerto]` corresponden al par (IP, puerto) en el cual se encuentra escuchando el router de destino del `[mensaje]` (recuerde que su router se simula con un socket UDP asociado al par (IP, puerto)). De esta forma si, por ejemplo, tenemos el router R1 asociado a (127.0.0.1, 8881) y le enviamos el paquete `127.0.0.1, 8881, hola` usando `netcat` de la siguiente forma:
 
 ```bash
 $ nc -u 127.0.0.1 8881 << EOF
@@ -34,11 +34,11 @@ Cada router o nodo de nuestro mini-Internet debe tener su propia tabla de rutas.
 
 ![Tabla de Rutas](./imgs/tabla_ruta.png)
 
-Esta linea se traduce como: "Todo lo que reciba en el rango de direccion IP `[Red (CIDR)]`" y el rango de puertos `([Puerto_Inicial], [Puerto_final])` debo enviarlo al par `([IP_Para_llegar], [Puerto_para_llegar])`". El area de **Network Destination** es la red de destino y el area de **Gateway** corresponde al siguiente salto para llegar a la red de destino. En nuestro mini-Internet el rango de direccion IP [Red (CIDR)] corresponde a una unica direccion: 127.0.0.1 o localhost, pues estamos simulando una red (que normalmente contendria varias IP) usando varios puertos en vez de IPs.
+Esta linea se traduce como: "Todo lo que reciba en el rango de direccion IP `[Red (CIDR)]` y el rango de puertos `([Puerto_Inicial], [Puerto_final])` debo enviarlo al par `([IP_Para_llegar], [Puerto_para_llegar])`". El area de **Network Destination** es la red de destino y el area de **Gateway** corresponde al siguiente salto para llegar a la red de destino. En nuestro mini-Internet el rango de direccion IP [Red (CIDR)] corresponde a una unica direccion: 127.0.0.1 o localhost, pues estamos simulando una red (que normalmente contendria varias IP) usando varios puertos en vez de IPs.
 
 Notemos que el `[Puerto_Inicial]` y el `[Puerto_final]` no son el origen y destino, sino la forma que tenemos de agrupar los hosts de la red que pertenecen a la misma IP pero que estan escuchando en distintos puertos.
 
-**OBS: No olvide que aqui estamos simulando una red de forma local sobre una unica IP por propositos pedagogicos. Esta es la razon para utilizar un rango de puertos en vez de un rango de direcciones IP. Sin embargo, en la vida real, las redes se componen de varias direccion IP y los puertos son utilizados para distinguir procesos.**
+**OBS: No olvide que aqui estamos simulando una red de forma local sobre una unica IP por propositos pedagogicos. Esta es la razon para utilizar un rango de puertos en vez de un rango de direcciones IP. Sin embargo, en la vida real, las redes se componen de varias direcciones IP y los puertos son utilizados para distinguir procesos.**
 
 ## Ejemplos
 
@@ -46,7 +46,7 @@ Notemos que el `[Puerto_Inicial]` y el `[Puerto_final]` no son el origen y desti
 
 Supongamos que nuestro mini-Internet contiene solo 2 routers conectados entre si: R1 asociado a `(127.0.0.1, 8881)` y R2 asociado a `(127.0.0.1, 8882)` como se muestra:
 
-```
+```txt
 R1 <------> R2
 ```
 
@@ -82,7 +82,7 @@ El router R1 va a ver que el paquete no es para el, asi que va amirar su tabla d
 
 Suponga que ahora nuestro mini-Internet contiene solo 3 routers conectados entre si: R1 asociado a `(127.0.0.1,8881)`, R2 asociado a `(127.0.0.1,8882)` y R3 asociado a `(127.0.0.1,8883)` como se muestra:
 
-```bash
+```txt
 R1 <------> R2 <------> R3
 ```
 
