@@ -52,3 +52,20 @@ class Router:
         parsed_route['hop_address'] = (route_list[3], int(route_list[4]))
 
         return parsed_route
+
+    def check_routes(self, routes_file_name: str, destination_address: tuple[str, int]) -> tuple[str, int] | None:
+        """Revisa en orden descendente la tabla de rutas guardada en el archivo `routes_file_name`, en caso de existir
+        una ruta apropiada en la tabla de rutas, se retorna la tupla (IP, puerto) con la direccion de salto siguiente en la red,
+        en caso contrario retorna `None`.
+        """
+
+        with open(routes_file_name, "r") as f:
+            route = f.read()
+            parsed_route = self.parse_route(route)
+            min_port = parsed_route['port_range'][0]
+            max_port = parsed_route['port_range'][1]
+
+            if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
+                return (parsed_route['hop_address'])
+
+        return None
