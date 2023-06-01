@@ -11,7 +11,16 @@ Gran parte de la materia que se encuentra resumida en los ejemplos aplicados fue
 
 ## Tareas
 
-* [**Forwarding Basico**](./actividades/forwarding_basico/resumen.md)
+En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo que realizan los ayudantes luego de evaluar la tarea, adicionalmente dentro de cada actividad (tarea) se encuentra un mini-informe el cual era parte de la entrega.
+
+* [**(HTTP) Construir un Proxy**](./actividades/request_http/proxy_server_co.py)
+* [**(DNS) Construccion Resolver**](./actividades/resolver_dns/resolver.py)
+* [**(TCP y UDP) Socket OC Stop & Wait**](./actividades/sockets_stop_wait/socketTCP.py)
+* [**(TCP Comunicacion Confiable) Selective Repeat**]()
+* [**(TCP) Control de Congestion**]()
+* [**(Capa de Red) Forwarding Basico**](./actividades/forwarding_basico/resumen.md)
+
+**TODO:** Por ahora existen tareas que no direccionan hacia el enunciado pues falta traspasar este a md :c
 
 ## Auxiliares
 
