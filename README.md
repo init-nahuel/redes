@@ -1,13 +1,19 @@
 # Redes
 
-La materia se divide por temas, cada uno de estos temas tiene una parte de ejemplo en donde se muestra el funcionamiento aplicado del respectivo tema:
+Repositorio con las Tareas, Auxiliares y ejemplos por topico del curso Redes CC4303 **semestre Otonho 2023.**
 
-* **[DNS programado con sockets](./ejemplos_por_materia/dns_sockets/resumen.md)**
+La materia se divide por temas, cada uno de estos tiene una **seccion de ejemplo** en donde se muestra el funcionamiento aplicado del respectivo topico:
+
+* [**DNS programado con sockets**](./ejemplos_por_materia/dns_sockets/resumen.md)
 * [**Selective Repeat**](./ejemplos_por_materia/selective_repeat/resumen.md)
 
-Gran parte de la materia que se encuentra que resumida en los ejemplos aplicados fue extraida del material perteneciente al curso de Redes, todos los creditos pertinentes van para el equipo docente :D.
+Gran parte de la materia que se encuentra resumida en los ejemplos aplicados fue extraida del material perteneciente al curso de Redes, todos los creditos pertinentes van para el equipo docente :D.
 
-Aca se encuentran las auxiliares realizadas durante el semestre de Otonho 2023:
+## Tareas
+
+* [**Forwarding Basico**](./actividades/forwarding_basico/resumen.md)
+
+## Auxiliares
 
 * **[HTTP](./auxiliares/01_http.md)**
 * **[Proxies y Conexiones Persistentes](./auxiliares/02_proxies_conexiones_persistentes.md)**
@@ -22,6 +28,12 @@ Aca se encuentran las auxiliares realizadas durante el semestre de Otonho 2023:
 ### `netcat`
 
 Para enviar mensajes por internet se usa **netcat** de la siguiente forma:
+
+* Uso general:
+
+    ```bash
+    $ nc [opciones] [IP] [puerto]
+    ```
 
 * Si es orientado a conexion:
 
