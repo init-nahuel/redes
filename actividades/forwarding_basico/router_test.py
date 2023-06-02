@@ -25,9 +25,9 @@ while True:
     possible_msg = router.parse_packet(buffer)
     possible_address = (possible_msg['dest_ip'], int(possible_msg['dest_port']))
     if (possible_address == router_address):
-        print("ESTA WEA NO ESTA IMPRIMIENDO")
         print(f"----> Llego mensajito: {possible_msg['message']}")
     else:
         address = router.check_routes(routes_filepath, possible_address)
+        print(f"Enviando paquete a la direccion: {address}")
         socket_router.sendto(buffer, router_address)
     
