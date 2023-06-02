@@ -59,14 +59,16 @@ class Router:
         una ruta apropiada en la tabla de rutas, se retorna la tupla (IP, puerto) con la direccion de salto siguiente en la red,
         en caso contrario retorna `None`.
         """
+        try:
+            with open(routes_file_name, "r") as f:
+                route = f.read()
+                parsed_route = self.parse_route(route)
+                min_port = parsed_route['port_range'][0]
+                max_port = parsed_route['port_range'][1]
 
-        with open(routes_file_name, "r") as f:
-            route = f.read()
-            parsed_route = self.parse_route(route)
-            min_port = parsed_route['port_range'][0]
-            max_port = parsed_route['port_range'][1]
-
-            if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
-                return (parsed_route['hop_address'])
-
+                if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
+                    return (parsed_route['hop_address'])
+        except OSError:
+            print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
+        
         return None
