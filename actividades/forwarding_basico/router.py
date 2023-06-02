@@ -11,7 +11,8 @@ class Router:
 
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los headers datos del paquete IP recibido, retorna un diccionario
-        con los valores de destino dest_ip, dest_port y message.
+        con las llaves `dest_ip`: ip de destino, `dest_port`: puerto de destino
+        y `message`: mensaje del paquete.
         """
 
         packet_data = ip_packet.decode().split(',')
@@ -26,7 +27,7 @@ class Router:
         return parsed_packet
 
     def create_packet(self, parsed_ip_packet: dict[str, str]) -> str:
-        """Recibe el diccionario que retorna parse_packet y crea un paquete IP de acuerdo
+        """Recibe el diccionario que retorna `parse_packet` y crea un paquete IP de acuerdo
         a la estructura definida, el paquete se retorna como un string.
         """
 
