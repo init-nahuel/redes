@@ -61,14 +61,16 @@ class Router:
         """
         try:
             with open(routes_file_name, "r") as f:
-                route = f.read()
-                parsed_route = self.parse_route(route)
-                min_port = parsed_route['port_range'][0]
-                max_port = parsed_route['port_range'][1]
+                routes = f.read()
+                raw_routes = routes.split('\n')
+                for r in raw_routes:
+                    parsed_route = self.parse_route(r)
+                    min_port = parsed_route['port_range'][0]
+                    max_port = parsed_route['port_range'][1]
 
-                if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
-                    return (parsed_route['hop_address'])
+                    if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
+                        return (parsed_route['hop_address'])
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
-        
+
         return None
