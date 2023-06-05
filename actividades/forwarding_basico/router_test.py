@@ -12,7 +12,7 @@ def main():
 
     socket_router.bind(router_address)
 
-    new_router = router.Router(socket_router, router_address, "caca")
+    new_router = router.Router(socket_router, router_address)
 
     print(f"----> La IP del router es: {router_ip}")
     print(f"----> El puerto del router es: {router_port}")

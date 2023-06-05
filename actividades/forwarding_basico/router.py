@@ -1,13 +1,13 @@
 import socket
+import random
 
 
 class Router:
-    def __init__(self, router_socket: socket.socket, router_address: tuple[str, int], router_routes: str):
+    def __init__(self, router_socket: socket.socket, router_address: tuple[str, int]):
         self.router_socket = router_socket
         self.router_address = router_address
         self.router_ip = router_address[0]
         self.router_port = int(router_address[1])
-        self.router_routes = router_routes
 
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los headers datos del paquete IP recibido, retorna un diccionario
@@ -62,7 +62,8 @@ class Router:
         try:
             with open(routes_file_name, "r") as f:
                 routes = f.read()
-                raw_routes = routes.split('\n')
+                raw_routes = routes.split(
+                    '\n') if random.random() > 0.5 else reversed(routes.split('\n'))
                 for r in raw_routes:
                     parsed_route = self.parse_route(r)
                     min_port = parsed_route['port_range'][0]
