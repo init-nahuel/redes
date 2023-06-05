@@ -65,8 +65,7 @@ class Router:
         try:
             with open(routes_file_name, "r") as f:
                 routes = f.read()
-                raw_routes = routes.split(
-                    '\n') if random.random() > 0.5 else list(reversed(routes.split('\n')))
+                raw_routes = routes.split('\n')
 
                 # Agregamos la lista de rutas completas solo al comienzo o si esta se encuentra vacia (caso router con una ruta)
                 if (self.rr_routes == None or len(self.rr_routes) == 0):
