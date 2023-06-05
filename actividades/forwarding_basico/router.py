@@ -9,6 +9,9 @@ class Router:
         self.router_ip = router_address[0]
         self.router_port = int(router_address[1])
 
+        # Lista con las rutas no parseadas que no se han utilizado para forwarding
+        self.rr_routes = None
+
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los headers datos del paquete IP recibido, retorna un diccionario
         con las llaves `dest_ip`: ip de destino, `dest_port`: puerto de destino
@@ -63,14 +66,26 @@ class Router:
             with open(routes_file_name, "r") as f:
                 routes = f.read()
                 raw_routes = routes.split(
-                    '\n') if random.random() > 0.5 else reversed(routes.split('\n'))
+                    '\n') if random.random() > 0.5 else list(reversed(routes.split('\n')))
+
+                # Agregamos la lista de rutas completas solo al comienzo o si esta se encuentra vacia (caso router con una ruta)
+                if (self.rr_routes == None or len(self.rr_routes) == 0):
+                    self.rr_routes = raw_routes
+
                 for r in raw_routes:
                     parsed_route = self.parse_route(r)
                     min_port = parsed_route['port_range'][0]
                     max_port = parsed_route['port_range'][1]
 
                     if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
-                        return (parsed_route['hop_address'])
+                        if (r in self.rr_routes):
+                            # Removemos la ruta de la lista de rutas pues se utilizara ahora
+                            self.rr_routes.remove(r)
+                            return (parsed_route['hop_address'])
+                        else:
+                            # Agregamos al final de la lista la ruta que ya se utilizo anteriormente
+                            self.rr_routes.append(r)
+                            continue
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
 
