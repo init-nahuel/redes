@@ -23,18 +23,19 @@ print("<------------------------------------>")
 while True:
     buffer, _ = socket_router.recvfrom(1026)
     possible_msg = router.parse_packet(buffer)
-    possible_address = (possible_msg['dest_ip'],
-                        int(possible_msg['dest_port']))
-    if (possible_address == router_address):
+    dest_address = (possible_msg['dest_ip'],
+                    int(possible_msg['dest_port']))
+    if (dest_address == router_address):
         print(
             f"----> Llego mensaje a este router ({router_address}), mostrando contenido: {possible_msg['message']}")
     else:
-        address = router.check_routes(routes_filepath, possible_address)
+        hop_address = router.check_routes(routes_filepath, dest_address)
         print(
-            f"----> Recibido paquete con direccion de destino {possible_address}")
-        if address != None:
-            print(f"----> Enviando paquete a la direccion de salto: {address}")
-            socket_router.sendto(buffer, address)
+            f"----> Recibido paquete con direccion de destino {dest_address}")
+        if hop_address != None:
+            print(
+                f"----> Redirigiendo paquete {buffer.decode()} con destino final {dest_address} desde {router_address} hacia {hop_address}")
+            socket_router.sendto(buffer, hop_address)
         else:
             print(
-                "----> No se encontro direccion de salto en tabla de rutas, descartando paquete...")
+                f"----> No hay rutas hacia {dest_address} para paquete {buffer.decode()}")
