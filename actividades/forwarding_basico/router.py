@@ -71,20 +71,19 @@ class Router:
                 if (self.rr_routes == None or len(self.rr_routes) == 0):
                     self.rr_routes = raw_routes
 
-                for r in raw_routes:
+                for r in self.rr_routes:
                     parsed_route = self.parse_route(r)
                     min_port = parsed_route['port_range'][0]
                     max_port = parsed_route['port_range'][1]
 
                     if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
-                        if (r in self.rr_routes):
-                            # Removemos la ruta de la lista de rutas pues se utilizara ahora
-                            self.rr_routes.remove(r)
-                            return (parsed_route['hop_address'])
-                        else:
-                            # Agregamos al final de la lista la ruta que ya se utilizo anteriormente
-                            self.rr_routes.append(r)
-                            continue
+                        # La removemos y agregamos al final, como se recorre en secuencia la lista de rutas se 
+                        # asegura que la ruta utilizada ahora no se utilizara denuevo hasta que las rutas alternativas se usen y se agregen
+                        # despues de esta (si es que existen rutas alternativas)
+                        self.rr_routes.remove(r)
+                        self.rr_routes.append(r)
+                        
+                        return parsed_route['hop_address']
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
 
