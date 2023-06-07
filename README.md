@@ -24,13 +24,13 @@ En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo 
 
 ## Auxiliares
 
-* **[HTTP](./auxiliares/01_http.md)**
-* **[Proxies y Conexiones Persistentes](./auxiliares/02_proxies_conexiones_persistentes.md)**
-* **[DNS Parte 1](./auxiliares/03_dns_I.md)**
-* **[DNS Parte 2](./auxiliares/04_dns_II.md)**
-* **[Capa de Transporte](./auxiliares/05_capa_de_transporte.md)**
-* **[Comunicacion Confiable](./auxiliares/06_comunicacion_confiable.md)**
-* [**Comunicandonos Confiablemente**](./auxiliares/07_comunicandonos_confiablemente.md)
+* **[01 HTTP](./auxiliares/01_http.md)**
+* **[02 Proxies y Conexiones Persistentes](./auxiliares/02_proxies_conexiones_persistentes.md)**
+* **[03 DNS Parte 1](./auxiliares/03_dns_I.md)**
+* **[04 DNS Parte 2](./auxiliares/04_dns_II.md)**
+* **[05 Capa de Transporte](./auxiliares/05_capa_de_transporte.md)**
+* **[06 Comunicacion Confiable](./auxiliares/06_comunicacion_confiable.md)**
+* [**07 Comunicandonos Confiablemente**](./auxiliares/07_comunicandonos_confiablemente.md)
 
 ## Comandos utiles
 
