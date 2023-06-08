@@ -1,5 +1,4 @@
 import socket
-import random
 
 
 class Router:
@@ -20,12 +19,19 @@ class Router:
 
         packet_data = ip_packet.decode().split(',')
 
-        # Se utiliza replace para hacer formatting del dato obtenido, segun el estandar
-        # definido esto no es necesario pues los paquetes debiesen encontrarse de la siguiente manera
-        # Ej: ip,port,message . Sin embargo, se realiza en caso de error.
-        parsed_packet = {'dest_ip': packet_data[0].replace(' ', ''),
-                         'dest_port': packet_data[1].replace(' ', ''),
-                         'message': packet_data[2]}
+        if (len(packet_data) == 3):  # Caso paquete IP sin TTL
+
+            # Se utiliza replace para hacer formatting del dato obtenido, segun el estandar
+            # definido esto no es necesario pues los paquetes debiesen encontrarse de la siguiente manera
+            # Ej: ip,port,message . Sin embargo, se realiza en caso de error.
+            parsed_packet = {'dest_ip': packet_data[0].replace(' ', ''),
+                             'dest_port': packet_data[1].replace(' ', ''),
+                             'message': packet_data[2]}
+        elif (len(packet_data) == 4):  # Caso paquete IP con TTL
+            parsed_packet = {'dest_ip': packet_data[0].replace(' ', ''),
+                             'dest_port': packet_data[1].replace(' ', ''),
+                             'TTL': packet_data[2],
+                             'message': packet_data[3]}
 
         return parsed_packet
 
