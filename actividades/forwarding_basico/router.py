@@ -25,7 +25,7 @@ class Router:
         # Ej: ip,port,message . Sin embargo, se realiza en caso de error.
         parsed_packet = {'dest_ip': packet_data[0].replace(' ', ''),
                          'dest_port': packet_data[1].replace(' ', ''),
-                         'message': packet_data[2].replace(' ', '')}
+                         'message': packet_data[2]}
 
         return parsed_packet
 
@@ -77,12 +77,12 @@ class Router:
                     max_port = parsed_route['port_range'][1]
 
                     if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
-                        # La removemos y agregamos al final, como se recorre en secuencia la lista de rutas se 
+                        # La removemos y agregamos al final, como se recorre en secuencia la lista de rutas se
                         # asegura que la ruta utilizada ahora no se utilizara denuevo hasta que las rutas alternativas se usen y se agregen
                         # despues de esta (si es que existen rutas alternativas)
                         self.rr_routes.remove(r)
                         self.rr_routes.append(r)
-                        
+
                         return parsed_route['hop_address']
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
