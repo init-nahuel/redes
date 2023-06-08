@@ -14,7 +14,8 @@ class Router:
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los headers datos del paquete IP recibido, retorna un diccionario
         con las llaves `dest_ip`: ip de destino, `dest_port`: puerto de destino
-        y `message`: mensaje del paquete.
+        y `message`: mensaje del paquete, en caso de que el paquete posea TTL se agrega
+        la llave `TTL`.
         """
 
         packet_data = ip_packet.decode().split(',')
