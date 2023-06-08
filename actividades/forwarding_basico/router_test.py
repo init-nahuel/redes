@@ -23,14 +23,24 @@ def main():
 
     while True:
         buffer, _ = socket_router.recvfrom(1026)
-        possible_msg = new_router.parse_packet(buffer)
-        dest_address = (possible_msg['dest_ip'],
-                        int(possible_msg['dest_port']))
+        parsed_packet = new_router.parse_packet(buffer)
+        dest_address = (parsed_packet['dest_ip'],
+                        int(parsed_packet['dest_port']))
 
         if (dest_address == router_address):
             print(
-                f"----> Llego mensaje a este router ({router_address}), mostrando contenido: {possible_msg['message']}")
+                f"----> Llego mensaje a este router ({router_address}), mostrando contenido: {parsed_packet['message']}")
         else:
+            if ('TTL' in parsed_packet):  # Caso recibimos paquete con TTL
+                ttl = int(parsed_packet['TTL'])
+                if (ttl == 0):
+                    print(f"Se recibio paquete {buffer.decode()} con TTL 0")
+                    break
+                else:
+                    ttl -= 1
+                    parsed_packet['TTL'] = str(ttl)
+                    buffer = new_router.create_packet(parsed_packet).encode()
+
             hop_address = new_router.check_routes(
                 routes_filepath, dest_address)
             print(
