@@ -98,6 +98,45 @@ Cree el código que va a necesitar para manejar sus routers usando la sección a
 
 ## Mini Internet con TTL
 
+En esta parte vamos a realizar modificaciones a nuestro mini-Internet para evitar la aparición de ciclos infinitos en el ruteo de los mensajes. Este tipo de ciclos puede ocurrir, por ejemplo, cuando la tabla de rutas de un router se encuentra mal configurada tal como probamos en la parte anterior. Para evitar ciclos infinitos modificaremos el header y agregaremos un tercer valor: el Time-To-Live o TTL . Nuestro TTL corresponderá a un número entre 1 y 255. Con esto el nuevo formato de mensaje será:
+
+```bash
+[Direccion IP],[Puerto],[TTL],[mensaje]
+```
+
+Para esta parte de la actividad, siga los siguientes pasos:
+
+1. Modifique las funciones `parse_packet` y `create_packet` para que ahora puedan manejar el nuevo campo [TTL].
+
+    **Test:** Verifique que puede entregarle un paquete IP en bytes a su funcion `parse_packet` y que lo que esta retorna puede volver a convertirse en un paquete IP usando la funcion `create_packet` cuando el paquete incluye al header TTL. A continuacion puede ver el test de la parte 1 modificado para contener TTL:
+
+    ```python
+    IP_packet_v1 = "127.0.0.1,8881,4,hola".encode()
+    parsed_IP_packet = parse_packet(IP_packet_v1)
+    IP_packet_v2_str = create_packet(parsed_IP_packet)
+    IP_packet_v2 = IP_packet_v2_str.encode()
+    print("IP_packet_v1 == IP_packet_v2 ? {}".format(IP_packet_v1 == IP_packet_v2))
+    ```
+
+2. Haga que su codigo procese el mensaje solo si **TTL > 0**. Si dicha condicion no se cumple, su codigo debera ignorar el paquete e imprimir el mensaje **"Se recibio paquete [paquete_ip] con TTL 0"**.
+3. En caso de que el paquete deba ser reenviado, haga que su codigo drecremente el valor TTL antes de hacer forward. Es decir, que el TTL disminuya en 1 antes de hacer forward.
+
+    **Test:** Ejecute algunas de las estructuras utilizadas en la parte 1 que contenga al menos 3 routers, envie el paquete `127.0.0.1,8883,1,hola`, desde R1 a R3 y verifique que este no logra llegar a destino pues se descarta por  TTL.
+
+4. Para las pruebas haga un codigo que lea un archivo linea por linea, encapsule cada linea en headers IP y luego envie cada paquete a su direccion de destino usando un socket UDP. Haga que este codigo reciba los headers y la direccion del router inicial de destino como argumentos con **sys.argv** de la siguiente forma:
+
+    ```bash
+    $ python3 prueba_router.py headers IP_router_inicial puerto_router_inicial
+    ```
+
+    Con esto si queremos enviar linea a linea un archivo a traves de nuestro mini internet desde el router R1 al router R5, se debe ejecutar:
+
+    ```bash
+    $ python3 prueba_router.py 127.0.0.1,8885,10 127.0.0.1 8881
+    ```
+
+### Pruebas Mini-Internet con TTL
+
 1. Repita la primera prueba de la parte 1 (donde indujo error en la tabla de rutas) y vea qué ocurre. Use un TTL inicial `TTL = 10` ¿Qué diferencias observa? Anote sus observaciones brevemente en su informe.
 
 2. Cree un código que lea un archivo línea por línea, encapsule cada línea en headers IP y luego envíe cada paquete a un router usando un socket UDP. Haga que este código reciba los headers y la dirección del router inicial de destino como argumentos con sys.argv de la siguiente forma:
