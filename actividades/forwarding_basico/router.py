@@ -8,7 +8,7 @@ class Router:
         self.router_ip = router_address[0]
         self.router_port = int(router_address[1])
 
-        # Lista con las rutas no parseadas que no se han utilizado para forwarding
+        # Lista con las rutas no parseadas para round robin
         self.rr_routes = None
 
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
