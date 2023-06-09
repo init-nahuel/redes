@@ -31,6 +31,7 @@ En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo 
 * **[05 Capa de Transporte](./auxiliares/05_capa_de_transporte.md)**
 * **[06 Comunicacion Confiable](./auxiliares/06_comunicacion_confiable.md)**
 * [**07 Comunicandonos Confiablemente**](./auxiliares/07_comunicandonos_confiablemente.md)
+* [**08 Control de Gestion**](./auxiliares/08_control_de_gestion.md)
 
 ## Comandos utiles
 
