@@ -100,4 +100,32 @@ Ambas soluciones son complementarias, para asi evitar caer en ventanas tontas.
 
     En el instante inicial, cwnd=3KB (la ventana de congestion se setea de acuerdo al tamanho de segmento). Despues de 1RTT, se logran transferir 3KB y la ventana se duplica -> cwnd=6KB (2x3KB). Luego de 2RTT, se han transferido 9KB (3KB+6KB) y cwnd=12KB (4x3KB). Despues de 3RTT, se han transferido 21KB (3KB+6KB+12KB) y cwnd=24KB (8x3KB).
 
-* **Ahora suponga que despues del 3er RTT ocurre una perdida y que el emisor super el timeout, que hace el control de congestion?**
+* **Ahora suponga que despues del 3er RTT ocurre una perdida y que el emisor supera el timeout, que hace el control de congestion?**
+
+    Cuando se supera el timeout, el control de congestion resetea la cwnd a 1MSS. ssthresh se setea a la mitad del tamaño de la ventana de congestion antes del timeout.
+
+* **Despues de eso, que modo de control de congestion usa el emisor?**
+
+    Despues de esto se vuelve a Slow Start.
+
+* **Asumiendo que no hay perdida desde ese momento en adelante, cuantos RTTs toma retransmitir 24KB de datos adicionales?**
+
+    Sabemos de la primera parte que es posible transmitir 21KB en 3RTT, por lo tanto 4RTT son suficientes para transmitir 24KB.
+
+## Control de Flujo
+
+**1. Considere una conexion TCP con RTT 1ms, en la cual el enviador tiene 50000 bytes a enviar. No existen perdidas y/o congestion. El receptor tiene una ventana incial de 10000 bytes y lee 2000 bytes de datos cada dos segundos. Responda las siguientes preguntas con numeros, justificando:**
+
+* **Cual es el advertised window despues de un segundo?**
+
+    Caso 1: 1000, porque el receptor ha leido 1000 bytes de los 10000 que recibio.
+
+    Caso 2: 0, porque el receptor no ha leido nada.
+* **Cual es la advertised window despues de dos segundos?**
+
+    Caso 1 y 2: En ambos casos, el receptor ha leido 2000, por lo que el enviador puede mandar otros 2000.
+* **Cual es la advertised window despues de 50 segundos?**
+
+    Despues de 50 segundos, el enviador ya envio todo y el receptor ya leyo todo (2000 bytes cada dos segundos -> 50000 bytes despues de 50 segundos), luego, la ventana es de tamaño 10000.
+
+**OBS: Las respuestas pueden variar dependiendo de si asumen que el receptor lee 2000 bytes cada dos segundos de forma continua, caso 1, (despues de 1 segundo ha leido 1000) o discreta, caso 2, (en 1 ha leido 0, en 2 ha leido 2000).**
