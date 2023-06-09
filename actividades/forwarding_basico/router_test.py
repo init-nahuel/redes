@@ -29,7 +29,7 @@ def main():
 
         if (dest_address == router_address):
             print(
-                f"----> Llego mensaje a este router ({router_address}), mostrando contenido: {parsed_packet['message']}")
+                f"----> Llego el siguiente paquete a este router: {buffer.decode()}, mostrando contenido: {parsed_packet['message']}")
         else:
             if ('TTL' in parsed_packet):  # Caso recibimos paquete con TTL
                 ttl = int(parsed_packet['TTL'])
