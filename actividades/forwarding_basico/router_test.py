@@ -34,7 +34,8 @@ def main():
             if ('TTL' in parsed_packet):  # Caso recibimos paquete con TTL
                 ttl = int(parsed_packet['TTL'])
                 if (ttl == 0):
-                    print(f"Se recibio paquete {buffer.decode()} con TTL 0")
+                    print(
+                        f"----> Se recibio paquete {buffer.decode()} con TTL 0, descartando")
                     break
                 else:
                     ttl -= 1
