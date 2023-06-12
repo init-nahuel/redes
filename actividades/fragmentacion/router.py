@@ -129,6 +129,14 @@ class Router:
 
         return parsed_packet
 
+    def _make_size_number(self, n: int) -> str:
+        """Retorna el numero `n` en el formato definido, i.e. un string de 8 digitos. Ej: n=34 -> '00000043'
+        """
+
+        str_len = len(str(n))
+
+        return "0"*(8 - str_len) + str(n)
+
     def fragment_IP_packet(self, ip_packet: bytes, mtu: int) -> list[bytes]:
         """Retorna una lista de fragmentos cuyo largo es mayor o igual a uno, estos fragmentos
         tendran un tamanho menor o igual a `mtu`.
@@ -139,34 +147,39 @@ class Router:
         else:
             packet_header, packet_msg = self._get_header(ip_packet)
             coded_header_size = len(packet_header)
-            msg_size = len(packet_msg)
-            # packet_msg = packet_msg.decode()
-            packet_header = packet_header
             parsed_header = self._parse_header(packet_header)
-            is_fragment = parsed_header['FLAG']
+            is_fragment = int(parsed_header['FLAG'])
 
             # Consideramos el offset del fragmento original para los fragmentos de este en caso de FLAG = 1
-            offset = parsed_header['offset'] if parsed_header['FLAG'] else 0
+            offset = int(parsed_header['offset']
+                         ) if is_fragment else 0
 
-            parsed_header['FLAG'] = 1
+            # Asignamos FLAG=1 para los fragmentos
+            parsed_header['FLAG'] = str(1)
             fragments_list = []
             while (True):
                 # Debemos tener cuidado pues en cada iteracion se modifica el diccionario parsed_header, por eso se guarda en una variable al comienzo
-                # el valor de FLAG
-                if (coded_header_size + len(packet_msg) <= mtu):
+                # el valor de FLAG (is_fragment)
+                if (len(packet_msg) <= mtu - coded_header_size):
                     # Convertimos el header parseado a un paquete como tal agregando la llave message
                     parsed_header['message'] = packet_msg.decode()
                     parsed_header['offset'] = str(offset)
-                    parsed_header['size'] = len(packet_msg)
-                    parsed_header['FLAG'] = 1 if is_fragment else 0
-                    fragment_packet = self.create_packet(parsed_header)
-                    fragments_list.append(fragment_packet.encode())
-                    break
+                    # lo de arriba puede ir fuera pues se repite
 
-                parsed_header['size'] = mtu
-                parsed_header['offset'] = offset
-                fragments_list.append(packet_header + packet_msg[0:mtu])
-                packet_msg = packet_msg[mtu:]
-                offset += mtu
+                    parsed_header['size'] = self._make_size_number(
+                        len(packet_msg))
+                    parsed_header['FLAG'] = str(1) if is_fragment else str(0)
+                    fragments_list.append(
+                        self.create_packet(parsed_header).encode())
+                    break
+                content_size = len(packet_msg[0:mtu-coded_header_size])
+                parsed_header['size'] = self._make_size_number(content_size)
+                parsed_header['offset'] = str(offset)
+                parsed_header['message'] = packet_msg[0:mtu -
+                                                      coded_header_size].decode()
+                fragments_list.append(
+                    self.create_packet(parsed_header).encode())
+                packet_msg = packet_msg[mtu-coded_header_size:]
+                offset += content_size
 
             return fragments_list
