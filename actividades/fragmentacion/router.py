@@ -49,10 +49,11 @@ class Router:
         parsed_route['red_CIDR'] = route_list[0]
         parsed_route['port_range'] = (int(route_list[1]), int(route_list[2]))
         parsed_route['hop_address'] = (route_list[3], int(route_list[4]))
+        parsed_route['MTU'] = route_list[5]
 
         return parsed_route
 
-    def check_routes(self, routes_file_name: str, destination_address: tuple[str, int]) -> tuple[str, int] | None:
+    def check_routes(self, routes_file_name: str, destination_address: tuple[str, int]) -> tuple[tuple[str, int], int] | None:
         """Revisa en orden descendente la tabla de rutas guardada en el archivo `routes_file_name`, en caso de existir
         una ruta apropiada en la tabla de rutas, se retorna la tupla (IP, puerto) con la direccion de salto siguiente en la red,
         en caso contrario retorna `None`.
@@ -70,6 +71,7 @@ class Router:
                     parsed_route = self.parse_route(r)
                     min_port = parsed_route['port_range'][0]
                     max_port = parsed_route['port_range'][1]
+                    mtu = parsed_route['MTU']
 
                     if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
                         # La removemos y agregamos al final, como se recorre en secuencia la lista de rutas se
@@ -78,11 +80,10 @@ class Router:
                         self.rr_routes.remove(r)
                         self.rr_routes.append(r)
 
-                        return parsed_route['hop_address']
+                        return (parsed_route['hop_address'], mtu)
+                return None
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
-
-        return None
 
     def check_ttl(self, parsed_packet: dict[str, str]) -> bool:
         """Retorna `True` si la llave `TTL` del diccionario (paquete parseado) es mayor a 0 y adicionalmente decrementa este
