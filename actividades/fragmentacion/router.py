@@ -108,8 +108,7 @@ class Router:
             if key == 'message':
                 continue
             packet_header += val + ','
-        # Eliminamos la ultima ',' sobrante
-        packet_header = packet_header.strip(',')
+        # Notar que el header terminara con una ',' esto es asi pues despues se concateno el mensaje del paquete
 
         return (packet_header.encode(), packet_content.encode())
 
