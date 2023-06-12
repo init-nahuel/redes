@@ -1,13 +1,6 @@
-import socket
-
 
 class Router:
-    def __init__(self, router_socket: socket.socket, router_address: tuple[str, int]):
-        self.router_socket = router_socket
-        self.router_address = router_address
-        self.router_ip = router_address[0]
-        self.router_port = int(router_address[1])
-
+    def __init__(self):
         # Lista con las rutas no parseadas para round robin
         self.rr_routes = None
 
