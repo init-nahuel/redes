@@ -55,8 +55,8 @@ class Router:
 
     def check_routes(self, routes_file_name: str, destination_address: tuple[str, int]) -> tuple[tuple[str, int], int] | None:
         """Revisa en orden descendente la tabla de rutas guardada en el archivo `routes_file_name`, en caso de existir
-        una ruta apropiada en la tabla de rutas, se retorna la tupla (IP, puerto) con la direccion de salto siguiente en la red,
-        en caso contrario retorna `None`.
+        una ruta apropiada en la tabla de rutas, se retorna la tupla ((IP, puerto),mtu) con la direccion de salto siguiente en la red y el mtu
+        de la ruta seleccionada, en caso contrario retorna `None`.
         """
         try:
             with open(routes_file_name, "r") as f:
