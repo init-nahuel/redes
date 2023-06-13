@@ -80,7 +80,7 @@ class Router:
                         self.rr_routes.remove(r)
                         self.rr_routes.append(r)
 
-                        return (parsed_route['hop_address'], mtu)
+                        return (parsed_route['hop_address'], int(mtu))
                 return None
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
