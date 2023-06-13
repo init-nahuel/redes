@@ -151,8 +151,7 @@ class Router:
             is_fragment = int(parsed_header['FLAG'])
 
             # Consideramos el offset del fragmento original para los fragmentos de este en caso de FLAG = 1
-            offset = int(parsed_header['offset']
-                         ) if is_fragment else 0
+            offset = int(parsed_header['offset']) 
 
             # Asignamos FLAG=1 para los fragmentos
             parsed_header['FLAG'] = str(1)
@@ -183,3 +182,19 @@ class Router:
                 offset += content_size
 
             return fragments_list
+
+    def reassemble_IP_packet(self, fragment_list: list[bytes]) -> str | None:
+        """Reensambla un paquete IP a partir de una lista de fragmentos `fragment_list` y retorna el paquete, en caso de que
+        la lista se encuentre incompleta se retorna `None`.
+        """
+
+        decoded_packets = list(map(lambda f: (self.parse_packet(f), int(self.parse_packet(f)['offset'])), fragment_list))
+        decoded_packets.sort(key=lambda t: t[1])
+
+        if len(decoded_packets) == 1 and decoded_packets[0]['FLAG'] == 1: # Caso fragmento incompleto, descartamos
+            return None
+        
+        for parsed_packet,_ in decoded_packets:
+            ...
+            
+        return decoded_packets
