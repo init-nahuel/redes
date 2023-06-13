@@ -5,12 +5,12 @@ class Router:
         self.rr_routes = None
 
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
-        """Extrae los headers datos del paquete IP recibido, retorna un diccionario
+        """Extrae los datos del paquete IP recibido, retorna un diccionario
         con las llaves `dest_ip`: ip de destino, `dest_port`: puerto de destino, `message`: mensaje del paquete,
         `TTL`: time to live, y las llaves correspondientes a los campos de fragmentacion: `offset`, `ID`, `size` y `FLAG`.
         """
 
-        packet_data = ip_packet.decode().split(',')
+        packet_data = ip_packet.decode().split(',', 7)
 
         # Como viene en un orden determinado el paquete simplemente asignamos los valores
         parsed_packet = {'dest_ip': packet_data[0],
@@ -117,7 +117,7 @@ class Router:
         las llaves `dest_ip`, `dest_port`, `TTL`, `ID`, `offset`, `size`, `FLAG`.
         """
 
-        packet_data = header_packet.decode().split(',')
+        packet_data = header_packet.decode().split(',', 7)
 
         parsed_packet = {'dest_ip': packet_data[0],
                          'dest_port': packet_data[1],
