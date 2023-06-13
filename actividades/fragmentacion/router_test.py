@@ -28,16 +28,21 @@ def main():
         
         if (dest_address == router_address):
             print(
-                f"----> Llego el siguiente paquete a este router: {buffer.decode()}, mostrando contenido: {parsed_packet['message']}")
+                f"----> Llego el siguiente paquete a este router: ({buffer.decode()}), mostrando contenido: {parsed_packet['message']}")
         else:
             if (new_router.check_ttl(parsed_packet)):
                 hop_address = new_router.check_routes(routes_filepath, dest_address)
                 print(f"----> Recibido paquete con direccion de destino {dest_address}")
 
-                if hop_address[0]:
-                    print(f"----> Redirigiendo paquete {buffer.decode()} con destino final {dest_address} desde {router_address} hacia {hop_address[0]}")
-                    print(f"El MTU es {hop_address[1]}")
-                    socket_router.sendto(buffer, hop_address[0])
+                if hop_address is not None:
+                    hop_address, mtu = hop_address
+                    fragments_list = new_router.fragment_IP_packet(buffer, mtu)
+                    print(f"----> El MTU de la ruta es: {mtu}")
+                    
+                    # Enviamos los fragmentos
+                    for fragment in fragments_list:
+                        print(f"----> Redirigiendo fragmento ({fragment.decode()}) con destino final {dest_address} desde {router_address} hacia {hop_address}")
+                        socket_router.sendto(fragment, hop_address)
                 else:
                     print(f"----> No hay rutas hacia {dest_address} para paquete {buffer.decode()}")
             else:
