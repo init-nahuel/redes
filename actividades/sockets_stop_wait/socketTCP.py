@@ -383,7 +383,6 @@ class SocketTCP:
             if (self.sended_data_len > 0):
                 break
 
-            header_len = 15 + int(len(str(self.seq)))
             byte_buffer, _ = self.udp_socket.recvfrom(header + DATA_LEN)
             header = byte_buffer.decode()
             parsed_header = self.parse_segment(header)
