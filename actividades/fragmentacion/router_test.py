@@ -2,6 +2,7 @@ import router
 import socket
 import sys
 
+
 def main():
     _, router_ip, router_port, routes_filepath = sys.argv
 
@@ -25,30 +26,36 @@ def main():
         parsed_packet = new_router.parse_packet(buffer)
         dest_address = (parsed_packet['dest_ip'],
                         int(parsed_packet['dest_port']))
-        
+
         if (dest_address == router_address):
             print(
                 f"----> Llego el siguiente paquete a este router: ({buffer.decode()}), mostrando contenido: {parsed_packet['message']}")
         else:
             if (new_router.check_ttl(parsed_packet)):
-                hop_address = new_router.check_routes(routes_filepath, dest_address)
-                print(f"----> Recibido paquete con direccion de destino {dest_address}")
+                hop_address = new_router.check_routes(
+                    routes_filepath, dest_address)
+                print(
+                    f"----> Recibido paquete con direccion de destino {dest_address}")
 
                 if hop_address is not None:
                     hop_address, mtu = hop_address
                     fragments_list = new_router.fragment_IP_packet(buffer, mtu)
                     print(f"----> El MTU de la ruta es: {mtu}")
-                    
+
                     # Enviamos los fragmentos
                     for fragment in fragments_list:
-                        print(f"----> Redirigiendo fragmento ({fragment.decode()}) con destino final {dest_address} desde {router_address} hacia {hop_address}")
+                        print(
+                            f"----> Redirigiendo fragmento ({fragment.decode()}) con destino final {dest_address} desde {router_address} hacia {hop_address}")
                         socket_router.sendto(fragment, hop_address)
                 else:
-                    print(f"----> No hay rutas hacia {dest_address} para paquete {buffer.decode()}")
+                    print(
+                        f"----> No hay rutas hacia {dest_address} para paquete {buffer.decode()}")
             else:
-                print(f"----> Se recibio paquete {buffer.decode()} con TTL 0, descartando")
-        
+                print(
+                    f"----> Se recibio paquete {buffer.decode()} con TTL 0, descartando")
+
         print("<------------------------------------>")
+
 
 if __name__ == '__main__':
     try:
