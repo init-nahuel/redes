@@ -21,6 +21,15 @@ def main():
     # fragment_fragment_list = new_router.fragment_IP_packet(fragments_list[1], 36)
     # print(fragment_fragment_list)
 
+    print("\n-------------TEST Item 5:-------------")
+    ip_packet_v1 = "127.0.0.1,8885,10,347,0,00000005,0,hola!"
+    MTU = 38
+    fragment_list = new_router.fragment_IP_packet(ip_packet_v1.encode(), MTU)
+    ip_packet_v2_str = new_router.reassemble_IP_packet(fragment_list)
+    ip_packet_v2 = ip_packet_v2_str.encode()
+    print("ip_packet_v1 = ip_packet_v2 ? {}".format(bytes(ip_packet_v1, 'utf8') == ip_packet_v2))
+    print("-------------TEST Item 5:-------------")
+
 
 if __name__ == '__main__':
     try:
