@@ -239,3 +239,29 @@ class Router:
         packet_dict['message'] = packet_content
 
         return self.create_packet(packet_dict)
+
+    def receiver_manager(self, packets_dict: dict[str, list[bytes]], parsed_fragment: dict[str, str], packet_buffer: bytes) -> str | None:
+        """Almacena el fragmento `packet_buffer` en el diccionario `packets_dict` segun el ID del 
+        fragmento, en cada llamada trata de reensamblar el paquete segun el fragmento recibido, en caso de reensamblarlo
+        retorna el paquete reensamblado, en caso contrario retorna `None`."""
+
+        fragment_id = parsed_fragment['ID']
+
+        if fragment_id not in packets_dict.keys():
+            packets_dict[fragment_id] = [packet_buffer]
+            poss_assem_packet = self.reassemble_IP_packet(
+                packets_dict[fragment_id])
+
+            if poss_assem_packet is not None:
+                return poss_assem_packet
+            else:
+                return None
+
+        packets_dict[fragment_id].append(packet_buffer)
+        poss_assem_packet = self.reassemble_IP_packet(
+            packets_dict[fragment_id])
+
+        if poss_assem_packet is not None:
+            return poss_assem_packet
+
+        return None
