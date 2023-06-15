@@ -194,7 +194,45 @@ class Router:
         if len(decoded_packets) == 1 and decoded_packets[0]['FLAG'] == 1: # Caso fragmento incompleto, descartamos
             return None
         
-        for parsed_packet,_ in decoded_packets:
-            ...
+        if len(decoded_packets) == 1 and decoded_packets[0]['FLAG'] == 0:
+            return self.create_packet(decoded_packets[0])
+        
+        first_element = decoded_packets[0]
+        first_fragment = first_element[0]
+        previous_offset = int(first_fragment['offset']) + int(first_fragment['size'])
+        packet_content = first_fragment['message']
+
+        # Creamos el posible paquete parseado que se retornara si el ensamblaje es correcto
+        packet_dict = {}
+        packet_dict['dest_ip'] = first_fragment['dest_ip']
+        packet_dict['dest_port'] = first_fragment['dest_port']
+        packet_dict['TTL'] = first_fragment['TTL']
+        packet_dict['ID'] = first_fragment['ID']
+        
+        is_fragment = 0 # Variable para reconocer si la lista de fragmentos al ensamblarlos crea un fragmento o paquete
+
+        size_fragments_list = len(decoded_packets)
+        for i in range(1, size_fragments_list):
+            fragment = decoded_packets[i]
+            fragment_offset = fragment[1]
+            parsed_fragment = fragment[0]
+
+            if (fragment_offset != previous_offset): # Caso offsets no coinciden
+                return None
             
-        return decoded_packets
+            if (i == size_fragments_list - 1): # Caso iteracion llega al ultimo elemento
+                is_fragment = int(parsed_fragment['FLAG'])
+                packet_content += parsed_fragment['message']
+                break
+
+            packet_content += parsed_fragment['message']
+            previous_offset += int(parsed_fragment['size'])
+
+        # El offset sera nuestro offset inicial mas los largos de los fragmentos si el FLAG del ultimo fragmento
+        # ensamblado es 1 y 0 en caso contrario
+        packet_dict['offset'] = first_fragment['offset']
+        packet_dict['size'] = self._make_size_number(len(packet_content.encode()))
+        packet_dict['FLAG'] = str(is_fragment)
+        packet_dict['message'] = packet_content
+
+        return self.create_packet(packet_dict)
