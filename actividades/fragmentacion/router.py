@@ -151,7 +151,7 @@ class Router:
             is_fragment = int(parsed_header['FLAG'])
 
             # Consideramos el offset del fragmento original para los fragmentos de este en caso de FLAG = 1
-            offset = int(parsed_header['offset']) 
+            offset = int(parsed_header['offset'])
 
             # Asignamos FLAG=1 para los fragmentos
             parsed_header['FLAG'] = str(1)
@@ -188,18 +188,23 @@ class Router:
         la lista se encuentre incompleta se retorna `None`.
         """
 
-        decoded_packets = list(map(lambda f: (self.parse_packet(f), int(self.parse_packet(f)['offset'])), fragment_list))
-        decoded_packets.sort(key=lambda t: t[1])
+        decoded_fragments = list(map(lambda f: (self.parse_packet(
+            f), int(self.parse_packet(f)['offset'])), fragment_list))
+        decoded_fragments.sort(key=lambda t: t[1])
 
-        if len(decoded_packets) == 1 and decoded_packets[0]['FLAG'] == 1: # Caso fragmento incompleto, descartamos
+        size_fragments_list = len(decoded_fragments)
+
+        # Caso fragmento incompleto, descartamos
+        if size_fragments_list == 1 and decoded_fragments[0]['FLAG'] == 1:
             return None
-        
-        if len(decoded_packets) == 1 and decoded_packets[0]['FLAG'] == 0:
-            return self.create_packet(decoded_packets[0])
-        
-        first_element = decoded_packets[0]
+
+        if size_fragments_list == 1 and decoded_fragments[0]['FLAG'] == 0:
+            return self.create_packet(decoded_fragments[0])
+
+        first_element = decoded_fragments[0]
         first_fragment = first_element[0]
-        previous_offset = int(first_fragment['offset']) + int(first_fragment['size'])
+        offset = int(
+            first_fragment['offset']) + int(first_fragment['size'])
         packet_content = first_fragment['message']
 
         # Creamos el posible paquete parseado que se retornara si el ensamblaje es correcto
@@ -208,30 +213,28 @@ class Router:
         packet_dict['dest_port'] = first_fragment['dest_port']
         packet_dict['TTL'] = first_fragment['TTL']
         packet_dict['ID'] = first_fragment['ID']
-        
-        is_fragment = 0 # Variable para reconocer si la lista de fragmentos al ensamblarlos crea un fragmento o paquete
 
-        size_fragments_list = len(decoded_packets)
+        is_fragment = 0  # Variable para reconocer si la lista de fragmentos al ensamblarlos crea un fragmento o paquete
+
         for i in range(1, size_fragments_list):
-            fragment = decoded_packets[i]
+            fragment = decoded_fragments[i]
             fragment_offset = fragment[1]
             parsed_fragment = fragment[0]
 
-            if (fragment_offset != previous_offset): # Caso offsets no coinciden
+            if (fragment_offset != offset):  # Caso offsets no coinciden
                 return None
-            
-            if (i == size_fragments_list - 1): # Caso iteracion llega al ultimo elemento
+
+            if (i == size_fragments_list - 1):  # Caso iteracion llega al ultimo elemento
                 is_fragment = int(parsed_fragment['FLAG'])
                 packet_content += parsed_fragment['message']
                 break
 
             packet_content += parsed_fragment['message']
-            previous_offset += int(parsed_fragment['size'])
+            offset += int(parsed_fragment['size'])
 
-        # El offset sera nuestro offset inicial mas los largos de los fragmentos si el FLAG del ultimo fragmento
-        # ensamblado es 1 y 0 en caso contrario
         packet_dict['offset'] = first_fragment['offset']
-        packet_dict['size'] = self._make_size_number(len(packet_content.encode()))
+        packet_dict['size'] = self._make_size_number(
+            len(packet_content.encode()))
         packet_dict['FLAG'] = str(is_fragment)
         packet_dict['message'] = packet_content
 
