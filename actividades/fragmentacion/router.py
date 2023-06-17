@@ -266,7 +266,12 @@ class Router:
             packets_dict[fragment_id])
 
         if poss_assem_packet is not None:
-            packets_dict.pop(fragment_id)
-            return poss_assem_packet
+            parsed_assem_packet = self.parse_packet(poss_assem_packet.encode())
+            if int(parsed_assem_packet['FLAG']) == 1:
+                packets_dict[fragment_id] = [poss_assem_packet.encode()]
+                return None
+            else:
+                packets_dict.pop(fragment_id)
+                return poss_assem_packet
 
         return None
