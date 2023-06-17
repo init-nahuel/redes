@@ -163,19 +163,20 @@ class Router:
                     # Convertimos el header parseado a un paquete como tal agregando la llave message
                     parsed_header['message'] = packet_msg.decode()
                     parsed_header['offset'] = str(offset)
-                    # lo de arriba puede ir fuera pues se repite
-
                     parsed_header['size'] = self._make_size_number(
                         len(packet_msg))
                     parsed_header['FLAG'] = str(1) if is_fragment else str(0)
+
                     fragments_list.append(
                         self.create_packet(parsed_header).encode())
                     break
+
                 content_size = len(packet_msg[0:mtu-coded_header_size])
                 parsed_header['size'] = self._make_size_number(content_size)
                 parsed_header['offset'] = str(offset)
                 parsed_header['message'] = packet_msg[0:mtu -
                                                       coded_header_size].decode()
+
                 fragments_list.append(
                     self.create_packet(parsed_header).encode())
                 packet_msg = packet_msg[mtu-coded_header_size:]
@@ -188,6 +189,7 @@ class Router:
         la lista se encuentre incompleta se retorna `None`.
         """
 
+        # Creamos una lista ordenada segun offset de tuplas (fragmento parseado, offset)
         decoded_fragments = list(map(lambda f: (self.parse_packet(
             f), int(self.parse_packet(f)['offset'])), fragment_list))
         decoded_fragments.sort(key=lambda t: t[1])
@@ -201,12 +203,12 @@ class Router:
         packet_content = first_fragment['message']
         flag_first_fragment = int(first_fragment['FLAG'])
 
-        # Caso fragmento incompleto, descartamos
+        # Caso tenemos solo un fragmento, todavia falta recibir mas
         if size_fragments_list == 1 and flag_first_fragment == 1:
             return None
 
         if size_fragments_list == 1 and flag_first_fragment == 0:
-            return self.create_packet(decoded_fragments[0])
+            return self.create_packet(first_fragment)
 
         # Creamos el posible paquete parseado que se retornara si el ensamblaje es correcto
         packet_dict = {}
@@ -214,9 +216,10 @@ class Router:
         packet_dict['dest_port'] = first_fragment['dest_port']
         packet_dict['TTL'] = first_fragment['TTL']
         packet_dict['ID'] = first_fragment['ID']
+        packet_dict['offset'] = first_fragment['offset']
 
         # Variable para reconocer si la lista de fragmentos al ensamblarlos crea un fragmento o paquete
-        is_fragment = int(first_fragment['FLAG'])
+        is_fragment: int
 
         for i in range(1, size_fragments_list):
             fragment = decoded_fragments[i]
@@ -234,7 +237,6 @@ class Router:
             packet_content += parsed_fragment['message']
             offset += int(parsed_fragment['size'])
 
-        packet_dict['offset'] = first_fragment['offset']
         packet_dict['size'] = self._make_size_number(
             len(packet_content.encode()))
         packet_dict['FLAG'] = str(is_fragment)
@@ -267,6 +269,8 @@ class Router:
 
         if poss_assem_packet is not None:
             parsed_assem_packet = self.parse_packet(poss_assem_packet.encode())
+
+            # Caso: el paquete reensamblado posee FLAG=1 -> reensamblamos un fragmento, todavia falta
             if int(parsed_assem_packet['FLAG']) == 1:
                 packets_dict[fragment_id] = [poss_assem_packet.encode()]
                 return None
