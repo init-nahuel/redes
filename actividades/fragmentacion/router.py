@@ -194,18 +194,19 @@ class Router:
 
         size_fragments_list = len(decoded_fragments)
 
-        # Caso fragmento incompleto, descartamos
-        if size_fragments_list == 1 and decoded_fragments[0][0]['FLAG'] == 1:
-            return None
-
-        if size_fragments_list == 1 and decoded_fragments[0][0]['FLAG'] == 0:
-            return self.create_packet(decoded_fragments[0])
-
         first_element = decoded_fragments[0]
         first_fragment = first_element[0]
         offset = int(
             first_fragment['offset']) + int(first_fragment['size'])
         packet_content = first_fragment['message']
+        flag_first_fragment = int(first_fragment['FLAG'])
+
+        # Caso fragmento incompleto, descartamos
+        if size_fragments_list == 1 and flag_first_fragment == 1:
+            return None
+
+        if size_fragments_list == 1 and flag_first_fragment == 0:
+            return self.create_packet(decoded_fragments[0])
 
         # Creamos el posible paquete parseado que se retornara si el ensamblaje es correcto
         packet_dict = {}
@@ -214,7 +215,8 @@ class Router:
         packet_dict['TTL'] = first_fragment['TTL']
         packet_dict['ID'] = first_fragment['ID']
 
-        is_fragment = 0  # Variable para reconocer si la lista de fragmentos al ensamblarlos crea un fragmento o paquete
+        # Variable para reconocer si la lista de fragmentos al ensamblarlos crea un fragmento o paquete
+        is_fragment = int(first_fragment['FLAG'])
 
         for i in range(1, size_fragments_list):
             fragment = decoded_fragments[i]
@@ -254,6 +256,7 @@ class Router:
                 packets_dict[fragment_id])
 
             if poss_assem_packet is not None:
+                packets_dict.pop(fragment_id)
                 return poss_assem_packet
             else:
                 return None
@@ -263,6 +266,7 @@ class Router:
             packets_dict[fragment_id])
 
         if poss_assem_packet is not None:
+            packets_dict.pop(fragment_id)
             return poss_assem_packet
 
         return None

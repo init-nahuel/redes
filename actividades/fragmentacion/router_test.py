@@ -30,11 +30,14 @@ def main():
                         int(parsed_packet['dest_port']))
 
         if (dest_address == router_address):
+
             packet = new_router.receiver_manager(
                 router_packets, parsed_packet, buffer)
-            packet_content = new_router.parse_packet(packet.encode())
+
+            print("----> Recibido fragmento")
 
             if packet is not None:
+                packet_content = new_router.parse_packet(packet.encode())
                 print(
                     f"----> Se ensamblo el siguiente paquete con destino a este router: ({packet}), mostrando contenido: {packet_content['message']}")
             else:
