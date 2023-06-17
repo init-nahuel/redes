@@ -195,10 +195,10 @@ class Router:
         size_fragments_list = len(decoded_fragments)
 
         # Caso fragmento incompleto, descartamos
-        if size_fragments_list == 1 and decoded_fragments[0]['FLAG'] == 1:
+        if size_fragments_list == 1 and decoded_fragments[0][0]['FLAG'] == 1:
             return None
 
-        if size_fragments_list == 1 and decoded_fragments[0]['FLAG'] == 0:
+        if size_fragments_list == 1 and decoded_fragments[0][0]['FLAG'] == 0:
             return self.create_packet(decoded_fragments[0])
 
         first_element = decoded_fragments[0]
@@ -243,7 +243,8 @@ class Router:
     def receiver_manager(self, packets_dict: dict[str, list[bytes]], parsed_fragment: dict[str, str], packet_buffer: bytes) -> str | None:
         """Almacena el fragmento `packet_buffer` en el diccionario `packets_dict` segun el ID del 
         fragmento, en cada llamada trata de reensamblar el paquete segun el fragmento recibido, en caso de reensamblarlo
-        retorna el paquete reensamblado, en caso contrario retorna `None`."""
+        retorna el paquete reensamblado, en caso contrario retorna `None`.
+        """
 
         fragment_id = parsed_fragment['ID']
 
