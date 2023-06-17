@@ -14,6 +14,8 @@ def main():
 
     new_router = router.Router()
 
+    router_packets: dict[str, list[bytes]] = {}
+
     print(f"----> La IP del router es: {router_ip}")
     print(f"----> El puerto del router es: {router_port}")
     print(f"----> Mostrando archivo con rutas:")
@@ -28,8 +30,17 @@ def main():
                         int(parsed_packet['dest_port']))
 
         if (dest_address == router_address):
-            print(
-                f"----> Llego el siguiente paquete a este router: ({buffer.decode()}), mostrando contenido: {parsed_packet['message']}")
+            packet = new_router.receiver_manager(
+                router_packets, parsed_packet, buffer)
+            packet_content = new_router.parse_packet(packet.encode())
+
+            if packet is not None:
+                print(
+                    f"----> Se ensamblo el siguiente paquete con destino a este router: ({packet}), mostrando contenido: {packet_content['message']}")
+            else:
+                print(
+                    "----> Llego fragmento pero todavia no se encuentra ensamblado por completo")
+
         else:
             if (new_router.check_ttl(parsed_packet)):
                 hop_address = new_router.check_routes(
