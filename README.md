@@ -1,5 +1,14 @@
 # Redes
 
+- [Redes](#redes)
+  - [Tareas](#tareas)
+  - [Auxiliares](#auxiliares)
+  - [Comandos utiles](#comandos-utiles)
+    - [`netcat`](#netcat)
+    - [`netem`](#netem)
+    - [`curl` (HTTP)](#curl-http)
+    - [`dig` (DNS)](#dig-dns)
+
 Repositorio con las Tareas, Auxiliares y ejemplos por topico del curso Redes CC4303 **semestre Otonho 2023.**
 
 La materia se divide por temas, cada uno de estos tiene una **seccion de ejemplo** en donde se muestra el funcionamiento aplicado del respectivo topico:
@@ -20,6 +29,7 @@ En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo 
 * [**05 (TCP) Control de Congestion**]()
 * [**06 (Redes y Ruteo) Forwarding Basico**](./actividades/forwarding_basico/resumen.md)
 * [**07 (Redes y Ruteo) Fragmentacion**](./actividades/fragmentacion/resumen.md)
+* [**08 (Redes y Ruteo) BGP**](./actividades/bgp/resumen.md)
 
 **TODO:** Por ahora existen tareas que no direccionan hacia el enunciado pues falta traspasar este a md :c
 
