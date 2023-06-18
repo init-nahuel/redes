@@ -1,5 +1,7 @@
 # BGP
 
+Para esta actividad es necesario estudiar los enunciado previos de instrucciones [Mini-Internet + BGP](./mini_internet_bgp.md) y [Tabla de rutas BGP](./tabla_rutas_bgp.md).
+
 - [BGP](#bgp)
   - [Antes de Empezar](#antes-de-empezar)
   - [Actividad](#actividad)
