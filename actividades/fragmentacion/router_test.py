@@ -41,7 +41,6 @@ def main():
                 print(
                     f"----> Se ensamblo el siguiente paquete con destino a este router: ({packet}), mostrando contenido: {packet_content['message']}")
             else:
-                print(f"dict: {router_packets}")
                 print(
                     "----> Llego fragmento pero todavia no se encuentra ensamblado por completo")
 
