@@ -1,5 +1,14 @@
 # Forwarding basico
 
+- [Forwarding basico](#forwarding-basico)
+  - [Conceptos importantes](#conceptos-importantes)
+  - [Actividad](#actividad)
+    - [Mini-internet sin TTL](#mini-internet-sin-ttl)
+    - [Pruebas Mini-Internet sin TTL](#pruebas-mini-internet-sin-ttl)
+  - [Mini Internet con TTL](#mini-internet-con-ttl)
+    - [Pruebas Mini-Internet con TTL](#pruebas-mini-internet-con-ttl)
+  - [Material e indicaciones para la actividad](#material-e-indicaciones-para-la-actividad)
+
 ## Conceptos importantes
 
 * **Capa de red:** Para simular un mini-Internet necesitaremos simular el comportamiento de la capa de red. Esto significa que, a diferencia de capas superiores, aquí ya no asumimos que los datos simplemente llegan de un punto A a un punto B de forma directa, sino que estos pasan por routers intermedios.

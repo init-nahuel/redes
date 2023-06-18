@@ -1,5 +1,11 @@
 # Fragmentacion
 
+- [Fragmentacion](#fragmentacion)
+  - [Antes de empezar](#antes-de-empezar)
+  - [Actividad](#actividad)
+  - [Pruebas](#pruebas)
+  - [Material e indicaciones para la actividad](#material-e-indicaciones-para-la-actividad)
+
 ## Antes de empezar
 
 * **Maximum Transmission Unit (MTU)**: El MTU se refiere a la cantidad máxima de información en bytes que podemos enviar entre 2 routers a través del enlace que los une. Si un paquete IP es más grande que el MTU del enlace por el que debe pasar, este deberá ser fragmentado por el router en trozos más pequeños que quepan por el enlace. Estos trozos de datagrama IP son llamados fragmentos IP. Cada fragmento debe tener su propio header, por lo que la suma del tamaño del header y el tamaño los datos contenido en el fragmento debe ser menor o igual que el MTU del enlace. Es importante notar que el MTU puede ser distinto para distintos enlaces, por lo que es posible que un fragmento IP vuelva a ser fragmentado si llega a un enlace con un MTU menor que el tamaño del fragmento.
