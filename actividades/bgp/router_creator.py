@@ -13,6 +13,7 @@ def main():
     socket_router.bind(router_address)
 
     new_router = router.Router()
+    new_bgp_mng = router.BGP(new_router)
 
     router_packets: dict[str, list[bytes]] = {}
 
@@ -29,19 +30,20 @@ def main():
         dest_address = (parsed_packet['dest_ip'],
                         int(parsed_packet['dest_port']))
 
-        if (dest_address == router_address):
+        if (dest_address == router_address):  # Caso llega un paquete/fragmento a este router
 
             packet = new_router.receiver_manager(
                 router_packets, parsed_packet, buffer)
 
             print("----> Recibido fragmento")
 
-            if packet is not None:
+            if packet is not None:  # Caso reensamblamos el paquete por completo -> mostramos contenido
                 packet_content = new_router.parse_packet(packet.encode())
 
                 if "START_BGP" in packet_content['message']:
                     print(
                         f"----> Llego el siguiente paquete: {buffer.decode()}\n----> Comenzando ruteo BGP")
+                    new_bgp_mng.run_BGP()
                 elif "BGP_ROUTES" in packet_content['message']:
                     ...
                 else:
@@ -53,13 +55,13 @@ def main():
                     "----> Llego fragmento pero todavia no se encuentra ensamblado por completo")
 
         else:
-            if (new_router.check_ttl(parsed_packet)):
+            if (new_router.check_ttl(parsed_packet)):  # Caso TTL > 0
                 hop_address = new_router.check_routes(
                     routes_filepath, dest_address)
                 print(
                     f"----> Recibido paquete con direccion de destino {dest_address}")
 
-                if hop_address is not None:
+                if hop_address is not None:  # Caso encontramos ruta de salto para fragmento/paquete
                     hop_address, mtu = hop_address
                     fragments_list = new_router.fragment_IP_packet(buffer, mtu)
                     print(f"----> El MTU de la ruta es: {mtu}")
