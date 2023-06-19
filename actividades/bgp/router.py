@@ -16,6 +16,7 @@ def timer() -> None:
             return
         else:
             sleep(1)
+            print("Dormi")
             t -= 1
 
 
@@ -391,6 +392,23 @@ class BGP:
 
         return new_route
 
+    def _search_coincidende_asn_route(self, routes_table: str, dest_asn: str) -> str:
+        """Busca en la tabla de rutas `routes_table` la ruta que coincide con el ASN de destino `dest_asn`, retorna
+        la ruta y la elimina.
+        """
+
+        routes_table = routes_table.split('\n')
+
+        for raw_route in routes_table:
+            # Dado el formato de rutas podemos obtener asi el ASN de destino
+            route_dest_asn = raw_route.split(' ', 2)[1]
+
+            if route_dest_asn == dest_asn:
+                routes_table.remove(raw_route)
+                break
+
+        return ('\n'.join(routes_table), raw_route)
+
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
         """
@@ -441,7 +459,7 @@ class BGP:
 
         # Enviamos el mensaje START_BGP a nuestros vecinos
         self._get_neighbours()  # Guardamos los vecinos del router en self.neighbour_ports
-        print(f"----> Enviando mensaje START_BGP a routers vecinos")
+        print("----> Enviando mensaje START_BGP a routers vecinos")
         self._send_bgp_msg(router_socket, "START_BGP")
 
         prev_route_table = ""
@@ -450,12 +468,15 @@ class BGP:
         prev_route_table = current_route_table
 
         # Inicialmente enviamos las rutas a nuestros vecinos
+        print("----> Enviando mensaje BGP_ROUTES")
         self._send_bgp_msg(router_socket, "BGP_ROUTES")
 
         timer_thread = Thread(target=timer)
         timer_thread.start()
         global t  # tiempo del timer
-        while t != 0:
+        while True:
+            if t == 0:
+                break
             # Caso tabla de rutas cambia -> reset timer y envio nuevamente rutas
             if prev_route_table != current_route_table:
                 t = 10
@@ -495,7 +516,9 @@ class BGP:
                     self.known_asns.append(dest_asn)
                     new_routes += "\n" + \
                         self._create_new_route(asn_route_parsed)
-                else:  # Caso conosemos el ASN de destino -> comparamos
+                else:  # Caso conocemos el ASN de destino -> comparamos
+                    asn_route = self._search_coincidende_asn_route(
+                        current_route_table, dest_asn)
                     ...
 
             if new_routes != "":  # Agregamos nuevas rutas
