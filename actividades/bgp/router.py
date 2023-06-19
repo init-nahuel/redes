@@ -1,8 +1,11 @@
+import socket
+
 
 class Router:
-    def __init__(self):
+    def __init__(self, socket: socket.socket):
         # Lista con las rutas no parseadas para round robin
         self.rr_routes = None
+        self.router_socket = socket
 
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los datos del paquete IP recibido, retorna un diccionario
@@ -282,22 +285,38 @@ class Router:
 
 
 class BGP:
-    def __init__(self, router: Router) -> None:
+    def __init__(self, router: Router, routes_file_path) -> None:
         self.router = router
         self.asn_routes = []
+        self.routes_file = routes_file_path
+        self.neighbour_ports: list[int] = []
 
-    def _get_asn_routes(self, route: str) -> str:
+    def _get_asn_route(self, route: str) -> str:
         """Obtiene la ruta ASN que contiene la ruta `route`, retorna un string con la ruta.
-        Ej: '127.0.0.1 [8882 8881] 127.0.0.1 8882 100' -> '8882 8881'
+        Ej: '127.0.0.1 [8882 8881] 127.0.0.1 8882 100' -> '8882 8881'.
         """
 
         # Dividimos empezando desde la derecha una cantidad de 3 espacios y
         # luego uno desde la izquierda, esto funciona debido al formato estandar que se definio
         route = route.rsplit(' ', 3)
+
         route = route[0].split(' ', 1) + route
         asn_route = route[1]  # Obtenemos la ruta ASN
 
         return asn_route
+
+    def _get_neighbours(self) -> None:
+        """Obtiene los puertos de los routers vecinos al router asociado y los guarda en `neighbour_ports`.
+        """
+
+        with open(self.routes_file, "r") as f:
+            routes_list = f.read().split("\n")
+
+            for route in routes_list:
+                port = int(route.rsplit(' ', 2)[-2])
+                self.neighbour_ports.append(port)
+
+        return None
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -330,7 +349,7 @@ class BGP:
             routes_list = f.read().split("\n")
 
             for r in routes_list:
-                asn_route = self._get_asn_routes(r)
+                asn_route = self._get_asn_route(r)
                 content += '\n{}'.format(asn_route)
 
         packet_dict['size'] = str(len(content.encode()))
@@ -341,4 +360,12 @@ class BGP:
         return bgp_routes_packet
 
     def run_BGP(self):
-        ...
+        """"""
+
+        # Enviamos el mensaje START_BGP a nuestros vecinos
+        self._get_neighbours()
+        router_socket = self.router.router_socket
+        for port in self.neighbour_ports:
+            bgp_start = self.create_init_BGP_message(
+                "127.0.0.1", port, 10, 120)
+            router_socket.sendto(bgp_start.encode(), ('localhost', port))
