@@ -489,7 +489,10 @@ class BGP:
                 self._send_bgp_msg(router_socket, "BGP_ROUTES")
 
             try:
-                self.router.router_socket.settimeout(10)
+                # Esperamos recibiendo BGP_ROUTES
+                self.router.router_socket.settimeout(
+                    10)
+
                 received_packet, _ = router_socket.recvfrom(1024)
                 parsed_packet = self.router.parse_packet(received_packet)
 
