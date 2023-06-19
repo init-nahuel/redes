@@ -20,10 +20,12 @@ def timer() -> None:
 
 
 class Router:
-    def __init__(self, socket: socket.socket):
+    def __init__(self, socket: socket.socket, router_addres: tuple[str, int]):
         # Lista con las rutas no parseadas para round robin
         self.rr_routes = None
         self.router_socket = socket
+        self.router_ip = router_addres[0]
+        self.router_port = router_addres[1]
 
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los datos del paquete IP recibido, retorna un diccionario
@@ -304,9 +306,12 @@ class Router:
 
 class BGP:
     def __init__(self, router: Router, routes_file_path: str) -> None:
-        self.router = router
-        self.asn_routes = []
-        self.routes_file = routes_file_path  # Tabla de rutas del routes asociado
+        self.router: Router = router
+
+        # Lista con los ASN de los routers conocidos por el routes asociado
+        self.known_asns: list[str] = []
+
+        self.routes_file: str = routes_file_path  # Tabla de rutas del router asociado
         self.neighbour_ports: list[int] = []  # Vecinos del router asociado
 
     def _get_asn_route(self, route: str) -> str:
@@ -370,6 +375,21 @@ class BGP:
             msg_dict['ASN_routes'].append(msg[i])
 
         return msg_dict
+
+    def _create_new_route(self, asn_route: list[str]) -> str:
+        """Retorna una nueva ruta para agregar en la tabla de rutas dada una ruta ASN.
+        """
+
+        new_route = "127.0.0.1 "
+
+        for asn in asn_route:
+            new_route += asn + " "
+
+        new_route += "{} ".format(self.router.router_port)
+
+        new_route += "127.0.0.1 {} 100".format(asn_route[-1])
+
+        return new_route
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -439,6 +459,7 @@ class BGP:
             # Caso tabla de rutas cambia -> reset timer y envio nuevamente rutas
             if prev_route_table != current_route_table:
                 t = 10
+                prev_route_table = current_route_table
                 self._send_bgp_msg(router_socket)
 
             received_packet, _ = router_socket.recvfrom(1024)
@@ -449,5 +470,28 @@ class BGP:
                 continue
 
             # Sino estamos recibiendo rutas por tanto revisamos si sirven
+            parsed_bgp_routes = self._parse_bgp_routes(
+                parsed_packet['message'])
+
+            new_routes = ""
+            for route in parsed_bgp_routes['ASN_routes']:
+                if self.router.router_port in route:  # Caso ruta contiene el ASN del router asociado -> descartamos
+                    continue
+
+                # Generamos una lista con los ASN de los routers de la ruta ASN
+                asn_route_parsed = route.split(' ')
+
+                dest_asn = asn_route_parsed[0]
+
+                # Caso no conocemos el ASN de destino -> agregamos la ruta
+                if dest_asn not in self.known_asns:
+                    self.known_asns.append(dest_asn)
+                    new_routes += "\n" + \
+                        self._create_new_route(asn_route_parsed)
+                else:  # Caso conosemos el ASN de destino -> comparamos
+                    ...
+
+            if new_routes != "":  # Agregamos nuevas rutas
+                current_route_table += new_routes
 
         return current_route_table
