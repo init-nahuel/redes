@@ -36,14 +36,14 @@ El objetivo de esta actividad es implementar BGP en nuestro mini-Internet. Para 
 Para esta actividad queremos probar que su código router es capaz de encontrar las rutas dado que solo sabe cómo llegar a sus vecinos. Para las pruebas considere la estructura de 5 routers de la actividad anterior con 2 routers extra R6 y R7 como se muestra en la figura. Asuma que cada enlace en esta nueva configuración tiene un MTU = 1000.
 
 ```bash
- R1 <--------> R2 <--------> R3                        
+R1 <--------> R2 <--------> R3                        
 
             ^             ^                      
 
             |             |                      
 
             v             v                      
-R4 <--------> R5 <--------> R6 <--------> R7
+            R4 <--------> R5 <--------> R6 <--------> R7
 ```
 
 - Primero ponga a correr su algoritmo BGP en cada router y verifique que sus tablas de ruta convergen. Observe las tablas de ruta impresas y compruebe que cada router tiene una ruta a cada uno de los otros 6 routers dentro de la configuración.
