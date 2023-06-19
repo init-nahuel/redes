@@ -349,13 +349,13 @@ class BGP:
         if msg_type == "BGP_ROUTES":
             for port in self.neighbour_ports:
                 bgp_routes_packet = self.create_BGP_message(
-                    self.routes_file, 'localhost', port, 10, 120)
+                    self.routes_file, '127.0.0.1', port, 10, 120)
                 router_socket.sendto(
                     bgp_routes_packet.encode(), ('localhost', port))
         elif msg_type == "START_BGP":
             for port in self.neighbour_ports:
                 bgp_start_packet = self.create_init_BGP_message(
-                    'localhost', port, 10, 120)
+                    '127.0.0.1', port, 10, 120)
                 router_socket.sendto(
                     bgp_start_packet.encode(), ('localhost', port))
 
@@ -460,7 +460,12 @@ class BGP:
             if prev_route_table != current_route_table:
                 t = 10
                 prev_route_table = current_route_table
-                self._send_bgp_msg(router_socket)
+
+                # Modificamos el archivo de tablas de rutas
+                with open(self.routes_file, "w") as f:
+                    f.write(current_route_table)
+
+                self._send_bgp_msg(router_socket, "BGP_ROUTES")
 
             received_packet, _ = router_socket.recvfrom(1024)
             parsed_packet = self.router.parse_packet(received_packet)
@@ -475,7 +480,9 @@ class BGP:
 
             new_routes = ""
             for route in parsed_bgp_routes['ASN_routes']:
-                if self.router.router_port in route:  # Caso ruta contiene el ASN del router asociado -> descartamos
+
+                # Caso ruta contiene el ASN del router asociado -> descartamos
+                if str(self.router.router_port) in route:
                     continue
 
                 # Generamos una lista con los ASN de los routers de la ruta ASN
