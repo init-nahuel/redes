@@ -339,3 +339,6 @@ class BGP:
         bgp_routes_packet = self.router.create_packet(packet_dict)
 
         return bgp_routes_packet
+
+    def run_BGP(self):
+        ...
