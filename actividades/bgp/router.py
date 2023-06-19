@@ -299,7 +299,7 @@ class BGP:
 
         return asn_route
 
-    def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int, offset: int, size: int, flag: int) -> str:
+    def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
         """
 
@@ -307,9 +307,9 @@ class BGP:
                        'dest_port': str(dest_port),
                        'TTL': str(ttl),
                        'ID': str(id),
-                       'offset': str(offset),
-                       'size': str(size),
-                       'FLAG': str(flag),
+                       'offset': "0",
+                       'size': str(len("START_BGP".encode())),
+                       'FLAG': "0",
                        'message': "START_BGP"}
         start_bgp_packet = self.router.create_packet(packet_dict)
 
@@ -322,7 +322,8 @@ class BGP:
         packet_dict = {'dest_ip': str(dest_ip),
                        'dest_port': str(dest_port),
                        'TTL': str(ttl),
-                       'ID': str(id)}
+                       'ID': str(id),
+                       'offset': "0"}
 
         content = 'BGP_ROUTES\n{}'.format(dest_port)
         with open(routes_file_name, "r") as f:
@@ -332,8 +333,7 @@ class BGP:
                 asn_route = self._get_asn_routes(r)
                 content += '\n{}'.format(asn_route)
 
-        packet_dict['offset'] = "0"
-        packet_dict['size'] = str(len(content))
+        packet_dict['size'] = str(len(content.encode()))
         packet_dict['FLAG'] = "0"
         packet_dict['message'] = content
         bgp_routes_packet = self.router.create_packet(packet_dict)
