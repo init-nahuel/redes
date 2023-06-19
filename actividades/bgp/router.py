@@ -539,6 +539,8 @@ class BGP:
                         "----> Agregando nuevas rutas recibidas de routers vecinos a la tabla de rutas")
                     current_route_table += new_routes
             except socket.timeout:
+                # Volvemos a resetear al valor por default el timeout del socket
+                self.router.router_socket.settimeout(None)
                 break
 
         print("----> Finalizando ejecucion algoritmo BGP")
