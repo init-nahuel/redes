@@ -355,8 +355,21 @@ class BGP:
                     bgp_start_packet.encode(), ('localhost', port))
 
         return None
-    
-    def _parse_bgp_routes_msg()
+
+    def _parse_bgp_routes(self, msg: str) -> dict[str, str | list[str]]:
+        """Parsea el mensaje BGP_ROUTES y entrega un diccionario con las llaves: `router_ASN`: ASN del router que envio el paquete, 
+        `ASN_routes`: lista con las rutas ASN contenidas en el mensaje.
+        """
+
+        msg_dict = {}
+        msg = msg.split('\n')
+        msg_dict['router_ASN'] = msg[1]
+        msg_dict['ASN_routes'] = []
+
+        for i in range(2, len(msg)-1):
+            msg_dict['ASN_routes'].append(msg[i])
+
+        return msg_dict
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -429,4 +442,12 @@ class BGP:
                 self._send_bgp_msg(router_socket)
 
             received_packet, _ = router_socket.recvfrom(1024)
+            parsed_packet = self.router.parse_packet(received_packet)
+
+            # Caso recibimos START_BGP -> ignoramos
+            if "START_BGP" in parsed_packet['message']:
+                continue
+
+            # Sino estamos recibiendo rutas por tanto revisamos si sirven
+
         return current_route_table
