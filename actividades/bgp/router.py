@@ -378,7 +378,7 @@ class BGP:
         return msg_dict
 
     def _create_new_route(self, asn_route: list[str]) -> str:
-        """Retorna una nueva ruta para agregar en la tabla de rutas dada una ruta ASN.
+        """Retorna una nueva ruta para agregar en la tabla de rutas dada una ruta ASN en forma de lista con los ASN.
         """
 
         new_route = "127.0.0.1 "
@@ -392,7 +392,7 @@ class BGP:
 
         return new_route
 
-    def _search_coincidende_asn_route(self, routes_table: str, dest_asn: str) -> str:
+    def _search_coincidende_asn_route(self, routes_table: str, dest_asn: str) -> tuple[str, str]:
         """Busca en la tabla de rutas `routes_table` la ruta que coincide con el ASN de destino `dest_asn`, retorna
         la ruta y la elimina.
         """
@@ -517,9 +517,16 @@ class BGP:
                     new_routes += "\n" + \
                         self._create_new_route(asn_route_parsed)
                 else:  # Caso conocemos el ASN de destino -> comparamos
-                    asn_route = self._search_coincidende_asn_route(
+                    current_route_table, asn_route = self._search_coincidende_asn_route(
                         current_route_table, dest_asn)
-                    ...
+                    asn_route = self._get_asn_route(asn_route).split(' ')
+
+                    # Ruta previa era mas corta por tanto la volvemos a agregar
+                    if len(asn_route) <= len(asn_route_parsed):
+                        new_routes += "\n" + self._create_new_route(asn_route)
+                    else:  # Nueva ruta es mas corta -> la agregamos
+                        new_routes += "\n" + \
+                            self._create_new_route(asn_route_parsed)
 
             if new_routes != "":  # Agregamos nuevas rutas
                 current_route_table += new_routes
