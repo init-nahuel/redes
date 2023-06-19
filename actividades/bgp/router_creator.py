@@ -12,7 +12,7 @@ def main():
 
     socket_router.bind(router_address)
 
-    new_router = router.Router(socket_router)
+    new_router = router.Router(socket_router, router_address)
     new_bgp_mng = router.BGP(new_router, routes_filepath)
 
     router_packets: dict[str, list[bytes]] = {}
