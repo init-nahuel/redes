@@ -284,6 +284,7 @@ class Router:
 class BGP:
     def __init__(self, router: Router) -> None:
         self.router = router
+        self.asn_routes = []
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int, offset: int, size: int, flag: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -301,9 +302,31 @@ class BGP:
 
         return start_bgp_packet
 
+    def _get_asn_routes(self, route: str) -> str:
+        """Obtiene la ruta ASN que contiene la ruta `route`, retorna un string con la ruta.
+        Ej: '127.0.0.1 [8882 8881] 127.0.0.1 8882 100' -> '8882 8881'
+        """
+
+        route = route.split(' ')
+        asn_route = route[1]  # Obtenemos la ruta ASN
+
+        return asn_route.strip("[]")
+
     def create_BGP_message(self, routes_file_name: str, dest_ip: str, dest_port: int, ttl: int, id: int, offset: int, size: int, flag: int) -> str:
         """Crea un mensage con rutas BGP `BGRP_ROUTES` para la cual lee el archivo `routes_file_name` con las rutas del router asociado.
         """
 
+        packet_dict = {'dest_ip': str(dest_ip),
+                       'dest_port': str(dest_port),
+                       'TTL': str(ttl),
+                       'ID': str(id),
+                       'offset': str(offset),
+                       'size': str(size),
+                       'FLAG': str(flag),
+                       'message': "BGP_ROUTES {}".format(dest_port)}
+
         with open(routes_file_name, "r") as f:
             routes_list = f.read().split("\n")
+
+        bgp_routes_packet = self.router.create_packet(packet_dict)
+        return bgp_routes_packet
