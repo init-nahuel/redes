@@ -343,6 +343,7 @@ class BGP:
             for route in routes_list:
                 port = int(route.rsplit(' ', 2)[-2])
                 self.neighbour_ports.append(port)
+                self.known_asns.append(str(port))
 
         return None
 
@@ -398,20 +399,21 @@ class BGP:
 
     def _search_coincidende_asn_route(self, routes_table: str, dest_asn: str) -> tuple[str, str]:
         """Busca en la tabla de rutas `routes_table` la ruta que coincide con el ASN de destino `dest_asn`, retorna
-        la ruta y la elimina.
+        una tupla con la tabla de rutas nueva con la ruta que coincide eliminada
+        y la ruta eliminada.
         """
 
-        routes_table = routes_table.split('\n')
+        raw_routes_list = routes_table.split('\n')
 
-        for raw_route in routes_table:
+        for raw_route in raw_routes_list:
             # Dado el formato de rutas podemos obtener asi el ASN de destino
             route_dest_asn = raw_route.split(' ', 2)[1]
 
             if route_dest_asn == dest_asn:
-                routes_table.remove(raw_route)
+                raw_routes_list.remove(raw_route)
                 break
 
-        return ('\n'.join(routes_table), raw_route)
+        return ('\n'.join(raw_routes_list), raw_route)
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -513,7 +515,7 @@ class BGP:
                     if str(self.router.router_port) in route:
                         continue
 
-                    # Generamos una lista con los ASN de los routers de la ruta ASN
+                    # Generamos una lista con los ASN de la ruta ASN
                     asn_route_parsed = route.split(' ')
 
                     dest_asn = asn_route_parsed[0]
@@ -524,22 +526,22 @@ class BGP:
                         new_routes += "\n" + \
                             self._create_new_route(asn_route_parsed)
                     else:  # Caso conocemos el ASN de destino -> comparamos
-                        current_route_table, asn_route = self._search_coincidende_asn_route(
+                        new_route_table, asn_route = self._search_coincidende_asn_route(
                             current_route_table, dest_asn)
                         asn_route = self._get_asn_route(asn_route).split(' ')
 
-                        # Ruta previa era mas corta por tanto la volvemos a agregar
-                        if len(asn_route) <= len(asn_route_parsed):
-                            new_routes += "\n" + \
-                                self._create_new_route(asn_route)
-                        else:  # Nueva ruta es mas corta -> la agregamos
+                        # Caso ruta nueva es mas corta -> reemplazamos
+                        if len(asn_route) > len(asn_route_parsed):
+                            current_route_table = new_route_table
                             new_routes += "\n" + \
                                 self._create_new_route(asn_route_parsed)
 
                 if new_routes != "":  # Agregamos nuevas rutas
-                    print(
-                        "----> Agregando nuevas rutas recibidas de routers vecinos a la tabla de rutas")
-                    current_route_table += new_routes
+                    # Caso sacamos una ruta para comparar cual era mas corta y gano la ruta previa
+                    if len(current_route_table) == len(new_routes) + len(prev_route_table):
+                        current_route_table = prev_route_table
+                    else:
+                        current_route_table += new_routes
             except socket.timeout:
                 # Volvemos a resetear al valor por default el timeout del socket
                 self.router.router_socket.settimeout(None)
