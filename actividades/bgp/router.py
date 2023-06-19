@@ -1,4 +1,20 @@
 import socket
+from threading import Thread
+from time import sleep
+
+t = 10
+def timer() -> None:
+    """Timer para timeout a la hora de llamar a `run_BGP`, utiliza la variable global
+    `t` para contar el tiempo transcurrido.
+    """
+
+    global t
+    while True:
+        if t == 0:
+            return
+        else:
+            sleep(1)
+            t -= 1
 
 
 class Router:
@@ -366,8 +382,10 @@ class BGP:
         prev_route_table = ""
         with open(self.routes_file, "r") as f:
             current_route_table = f.read()
-        
-        while True:
+
+        timer_thread = Thread(target=timer)        
+        global t # tiempo del timer
+        while t != 0:
             if prev_route_table != current_route_table:            
                 # Enviamos el mensaje START_BGP a nuestros vecinos
                 self._get_neighbours()
