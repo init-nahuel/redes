@@ -502,8 +502,10 @@ class BGP:
                 if "START_BGP" in parsed_packet['message']:
                     continue
 
-                print(
-                    f"----> Llego mensaje BGP_ROUTES: {received_packet.decode()}")
+                # print(
+                #     f"----> Llego mensaje BGP_ROUTES: {received_packet.decode()}")
+                print("----> Llego mensaje BGP_ROUTES")
+
                 # Sino estamos recibiendo rutas por tanto revisamos si sirven
                 parsed_bgp_routes = self._parse_bgp_routes(
                     parsed_packet['message'])
