@@ -307,10 +307,13 @@ class BGP:
         Ej: '127.0.0.1 [8882 8881] 127.0.0.1 8882 100' -> '8882 8881'
         """
 
-        route = route.split(' ')
+        # Dividimos empezando desde la derecha una cantidad de 3 espacios y
+        # luego uno desde la izquierda, esto funciona debido al formato estandar que se definio
+        route = route.rsplit(' ', 3)
+        route = route[0].split(' ', 1) + route
         asn_route = route[1]  # Obtenemos la ruta ASN
 
-        return asn_route.strip("[]")
+        return asn_route
 
     def create_BGP_message(self, routes_file_name: str, dest_ip: str, dest_port: int, ttl: int, id: int, offset: int, size: int, flag: int) -> str:
         """Crea un mensage con rutas BGP `BGRP_ROUTES` para la cual lee el archivo `routes_file_name` con las rutas del router asociado.
