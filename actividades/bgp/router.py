@@ -360,7 +360,8 @@ class BGP:
         return bgp_routes_packet
 
     def run_BGP(self):
-        """"""
+        """Se encarga de ejecutar el protoclo de ruteo BGP.
+        """
 
         # Enviamos el mensaje START_BGP a nuestros vecinos
         self._get_neighbours()
@@ -369,3 +370,5 @@ class BGP:
             bgp_start = self.create_init_BGP_message(
                 "127.0.0.1", port, 10, 120)
             router_socket.sendto(bgp_start.encode(), ('localhost', port))
+
+        # Algoritmo BGP
