@@ -430,7 +430,7 @@ class BGP:
         return start_bgp_packet
 
     def create_BGP_message(self, routes_file_name: str, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
-        """Crea un mensage con rutas BGP `BGRP_ROUTES` para la cual lee el archivo `routes_file_name` con las rutas del router asociado.
+        """Crea un mensage con rutas BGP `BGRP_ROUTES` para lo cual lee el archivo `routes_file_name` con las rutas del router asociado.
         """
 
         packet_dict = {'dest_ip': str(dest_ip),
@@ -449,7 +449,7 @@ class BGP:
 
         packet_dict['size'] = str(len(content.encode()))
         packet_dict['FLAG'] = "0"
-        packet_dict['message'] = content
+        packet_dict['message'] = content + "\nEND_BGP_ROUTES"
         bgp_routes_packet = self.router.create_packet(packet_dict)
 
         return bgp_routes_packet
@@ -500,6 +500,8 @@ class BGP:
                 if "START_BGP" in parsed_packet['message']:
                     continue
 
+                print(
+                    f"----> Llego mensaje BGP_ROUTES: {received_packet.decode()}")
                 # Sino estamos recibiendo rutas por tanto revisamos si sirven
                 parsed_bgp_routes = self._parse_bgp_routes(
                     parsed_packet['message'])
