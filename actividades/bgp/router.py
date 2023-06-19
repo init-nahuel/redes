@@ -363,12 +363,20 @@ class BGP:
         """Se encarga de ejecutar el protoclo de ruteo BGP.
         """
 
-        # Enviamos el mensaje START_BGP a nuestros vecinos
-        self._get_neighbours()
-        router_socket = self.router.router_socket
-        for port in self.neighbour_ports:
-            bgp_start = self.create_init_BGP_message(
-                "127.0.0.1", port, 10, 120)
-            router_socket.sendto(bgp_start.encode(), ('localhost', port))
+        prev_route_table = ""
+        with open(self.routes_file, "r") as f:
+            current_route_table = f.read()
+        
+        while True:
+            if prev_route_table != current_route_table:            
+                # Enviamos el mensaje START_BGP a nuestros vecinos
+                self._get_neighbours()
+                router_socket = self.router.router_socket
+                for port in self.neighbour_ports:
+                    bgp_start = self.create_init_BGP_message(
+                        "127.0.0.1", port, 10, 120)
+                    router_socket.sendto(bgp_start.encode(), ('localhost', port))
+                prev_route_table = current_route_table
+            
 
         # Algoritmo BGP
