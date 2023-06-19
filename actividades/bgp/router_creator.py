@@ -44,9 +44,12 @@ def main():
                     print(
                         f"----> Llego el siguiente paquete: {buffer.decode()}")
                     print("---> Comenzando ruteo BGP")
-                    new_bgp_mng.run_BGP()
-                elif "BGP_ROUTES" in packet_content['message']:
-                    ...
+                    actual_routes_table = new_bgp_mng.run_BGP()
+                    print(
+                        "^^^^^^^^^^^^^^^^^^^^^^^^TABLA DE RUTAS ACTUALIZADA^^^^^^^^^^^^^^^^^^^^^^^^")
+                    print(actual_routes_table)
+                    print(
+                        "^^^^^^^^^^^^^^^^^^^^^^^^TABLA DE RUTAS ACTUALIZADA^^^^^^^^^^^^^^^^^^^^^^^^")
                 else:
                     print(
                         f"----> Se ensamblo el siguiente paquete ({buffer.decode()}), mostrando contenido: {packet_content['message']}")
