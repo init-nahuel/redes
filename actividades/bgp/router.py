@@ -1,6 +1,6 @@
 import socket
 from threading import Thread
-from time import sleep
+import time
 
 t = 10
 
@@ -15,9 +15,13 @@ def timer() -> None:
         if t == 0:
             return
         else:
-            sleep(1)
+            time.sleep(1)
             print("Dormi")
             t -= 1
+
+
+def wait(time_event, timeout):
+    return time_event + timeout <= time.time()
 
 
 class Router:
@@ -471,64 +475,68 @@ class BGP:
         print("----> Enviando mensaje BGP_ROUTES")
         self._send_bgp_msg(router_socket, "BGP_ROUTES")
 
-        timer_thread = Thread(target=timer)
-        timer_thread.start()
-        global t  # tiempo del timer
         while True:
-            if t == 0:
-                break
             # Caso tabla de rutas cambia -> reset timer y envio nuevamente rutas
             if prev_route_table != current_route_table:
-                t = 10
                 prev_route_table = current_route_table
 
                 # Modificamos el archivo de tablas de rutas
                 with open(self.routes_file, "w") as f:
                     f.write(current_route_table)
 
+                print(
+                    "----> Se modificaron las tablas de rutas, enviando mensaje BGP_ROUTES a routers vecinos")
                 self._send_bgp_msg(router_socket, "BGP_ROUTES")
 
-            received_packet, _ = router_socket.recvfrom(1024)
-            parsed_packet = self.router.parse_packet(received_packet)
+            try:
+                self.router.router_socket.settimeout(10)
+                received_packet, _ = router_socket.recvfrom(1024)
+                parsed_packet = self.router.parse_packet(received_packet)
 
-            # Caso recibimos START_BGP -> ignoramos
-            if "START_BGP" in parsed_packet['message']:
-                continue
-
-            # Sino estamos recibiendo rutas por tanto revisamos si sirven
-            parsed_bgp_routes = self._parse_bgp_routes(
-                parsed_packet['message'])
-
-            new_routes = ""
-            for route in parsed_bgp_routes['ASN_routes']:
-
-                # Caso ruta contiene el ASN del router asociado -> descartamos
-                if str(self.router.router_port) in route:
+                # Caso recibimos START_BGP -> ignoramos
+                if "START_BGP" in parsed_packet['message']:
                     continue
 
-                # Generamos una lista con los ASN de los routers de la ruta ASN
-                asn_route_parsed = route.split(' ')
+                # Sino estamos recibiendo rutas por tanto revisamos si sirven
+                parsed_bgp_routes = self._parse_bgp_routes(
+                    parsed_packet['message'])
 
-                dest_asn = asn_route_parsed[0]
+                new_routes = ""
+                for route in parsed_bgp_routes['ASN_routes']:
 
-                # Caso no conocemos el ASN de destino -> agregamos la ruta
-                if dest_asn not in self.known_asns:
-                    self.known_asns.append(dest_asn)
-                    new_routes += "\n" + \
-                        self._create_new_route(asn_route_parsed)
-                else:  # Caso conocemos el ASN de destino -> comparamos
-                    current_route_table, asn_route = self._search_coincidende_asn_route(
-                        current_route_table, dest_asn)
-                    asn_route = self._get_asn_route(asn_route).split(' ')
+                    # Caso ruta contiene el ASN del router asociado -> descartamos
+                    if str(self.router.router_port) in route:
+                        continue
 
-                    # Ruta previa era mas corta por tanto la volvemos a agregar
-                    if len(asn_route) <= len(asn_route_parsed):
-                        new_routes += "\n" + self._create_new_route(asn_route)
-                    else:  # Nueva ruta es mas corta -> la agregamos
+                    # Generamos una lista con los ASN de los routers de la ruta ASN
+                    asn_route_parsed = route.split(' ')
+
+                    dest_asn = asn_route_parsed[0]
+
+                    # Caso no conocemos el ASN de destino -> agregamos la ruta
+                    if dest_asn not in self.known_asns:
+                        self.known_asns.append(dest_asn)
                         new_routes += "\n" + \
                             self._create_new_route(asn_route_parsed)
+                    else:  # Caso conocemos el ASN de destino -> comparamos
+                        current_route_table, asn_route = self._search_coincidende_asn_route(
+                            current_route_table, dest_asn)
+                        asn_route = self._get_asn_route(asn_route).split(' ')
 
-            if new_routes != "":  # Agregamos nuevas rutas
-                current_route_table += new_routes
+                        # Ruta previa era mas corta por tanto la volvemos a agregar
+                        if len(asn_route) <= len(asn_route_parsed):
+                            new_routes += "\n" + \
+                                self._create_new_route(asn_route)
+                        else:  # Nueva ruta es mas corta -> la agregamos
+                            new_routes += "\n" + \
+                                self._create_new_route(asn_route_parsed)
 
+                if new_routes != "":  # Agregamos nuevas rutas
+                    print(
+                        "----> Agregando nuevas rutas recibidas de routers vecinos a la tabla de rutas")
+                    current_route_table += new_routes
+            except socket.timeout:
+                break
+
+        print("----> Finalizando ejecucion algoritmo BGP")
         return current_route_table
