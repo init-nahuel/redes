@@ -12,8 +12,8 @@ def main():
 
     socket_router.bind(router_address)
 
-    new_router = router.Router()
-    new_bgp_mng = router.BGP(new_router)
+    new_router = router.Router(socket_router)
+    new_bgp_mng = router.BGP(new_router, routes_filepath)
 
     router_packets: dict[str, list[bytes]] = {}
 
@@ -42,7 +42,8 @@ def main():
 
                 if "START_BGP" in packet_content['message']:
                     print(
-                        f"----> Llego el siguiente paquete: {buffer.decode()}\n----> Comenzando ruteo BGP")
+                        f"----> Llego el siguiente paquete: {buffer.decode()}")
+                    print("---> Comenzando ruteo BGP")
                     new_bgp_mng.run_BGP()
                 elif "BGP_ROUTES" in packet_content['message']:
                     ...
