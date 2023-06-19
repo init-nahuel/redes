@@ -3,6 +3,8 @@ from threading import Thread
 from time import sleep
 
 t = 10
+
+
 def timer() -> None:
     """Timer para timeout a la hora de llamar a `run_BGP`, utiliza la variable global
     `t` para contar el tiempo transcurrido.
@@ -301,7 +303,7 @@ class Router:
 
 
 class BGP:
-    def __init__(self, router: Router, routes_file_path) -> None:
+    def __init__(self, router: Router, routes_file_path: str) -> None:
         self.router = router
         self.asn_routes = []
         self.routes_file = routes_file_path
@@ -322,7 +324,7 @@ class BGP:
         return asn_route
 
     def _get_neighbours(self) -> None:
-        """Obtiene los puertos de los routers vecinos al router asociado y los guarda en `neighbour_ports`.
+        """Obtiene los puertos de los routers vecinos al router asociado y los guarda en `self.neighbour_ports`.
         """
 
         with open(self.routes_file, "r") as f:
@@ -333,6 +335,18 @@ class BGP:
                 self.neighbour_ports.append(port)
 
         return None
+
+    def _send_bgp_message(self, router_socket: socket.socket) -> None:
+        """Envia los mensajes BGP_ROUTES a los routers vecinos del router asociado.
+        """
+
+        for port in self.neighbour_ports:
+            bgp_routes_packet = self.create_BGP_message(
+                self.routes_file, 'localhost', port, 10, 120)
+            router_socket.sendto(
+                bgp_routes_packet.encode(), ('localhost', port))
+
+        return
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -375,26 +389,36 @@ class BGP:
 
         return bgp_routes_packet
 
-    def run_BGP(self):
-        """Se encarga de ejecutar el protoclo de ruteo BGP.
+    def run_BGP(self) -> str:
+        """Se encarga de ejecutar el protoclo de ruteo BGP, retorna un string con la tabla de rutas
+        del router asociado.
         """
+
+        # Enviamos el mensaje START_BGP a nuestros vecinos
+        self._get_neighbours()
+        router_socket = self.router.router_socket
+        print(f"----> Enviando mensaje START_BGP a routers vecinos")
+        for port in self.neighbour_ports:
+            bgp_start = self.create_init_BGP_message(
+                "127.0.0.1", port, 10, 120)
+            router_socket.sendto(
+                bgp_start.encode(), ('localhost', port))
 
         prev_route_table = ""
         with open(self.routes_file, "r") as f:
             current_route_table = f.read()
+        prev_route_table = current_route_table
 
-        timer_thread = Thread(target=timer)        
-        global t # tiempo del timer
+        # Inicialmente enviamos las rutas a nuestros vecinos
+        self._send_bgp_message(router_socket)
+
+        timer_thread = Thread(target=timer)
+        timer_thread.start()
+        global t  # tiempo del timer
         while t != 0:
-            if prev_route_table != current_route_table:            
-                # Enviamos el mensaje START_BGP a nuestros vecinos
-                self._get_neighbours()
-                router_socket = self.router.router_socket
-                for port in self.neighbour_ports:
-                    bgp_start = self.create_init_BGP_message(
-                        "127.0.0.1", port, 10, 120)
-                    router_socket.sendto(bgp_start.encode(), ('localhost', port))
-                prev_route_table = current_route_table
-            
 
-        # Algoritmo BGP
+            received_packet, _ = router_socket.recvfrom(1024)
+            if prev_route_table != current_route_table:
+                self._send_bgp_message(router_socket)
+
+        return current_route_table
