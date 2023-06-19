@@ -306,8 +306,8 @@ class BGP:
     def __init__(self, router: Router, routes_file_path: str) -> None:
         self.router = router
         self.asn_routes = []
-        self.routes_file = routes_file_path
-        self.neighbour_ports: list[int] = []
+        self.routes_file = routes_file_path  # Tabla de rutas del routes asociado
+        self.neighbour_ports: list[int] = []  # Vecinos del router asociado
 
     def _get_asn_route(self, route: str) -> str:
         """Obtiene la ruta ASN que contiene la ruta `route`, retorna un string con la ruta.
@@ -336,17 +336,27 @@ class BGP:
 
         return None
 
-    def _send_bgp_message(self, router_socket: socket.socket) -> None:
-        """Envia los mensajes BGP_ROUTES a los routers vecinos del router asociado.
+    def _send_bgp_msg(self, router_socket: socket.socket, msg_type: str) -> None:
+        """Envia los mensajes de tipo `msg_type` a los routers vecinos del router asociado
+        a traves del socket `router_socket`.
         """
 
-        for port in self.neighbour_ports:
-            bgp_routes_packet = self.create_BGP_message(
-                self.routes_file, 'localhost', port, 10, 120)
-            router_socket.sendto(
-                bgp_routes_packet.encode(), ('localhost', port))
+        if msg_type == "BGP_ROUTES":
+            for port in self.neighbour_ports:
+                bgp_routes_packet = self.create_BGP_message(
+                    self.routes_file, 'localhost', port, 10, 120)
+                router_socket.sendto(
+                    bgp_routes_packet.encode(), ('localhost', port))
+        elif msg_type == "START_BGP":
+            for port in self.neighbour_ports:
+                bgp_start_packet = self.create_init_BGP_message(
+                    'localhost', port, 10, 120)
+                router_socket.sendto(
+                    bgp_start_packet.encode(), ('localhost', port))
 
-        return
+        return None
+    
+    def _parse_bgp_routes_msg()
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -394,15 +404,12 @@ class BGP:
         del router asociado.
         """
 
-        # Enviamos el mensaje START_BGP a nuestros vecinos
-        self._get_neighbours()
         router_socket = self.router.router_socket
+
+        # Enviamos el mensaje START_BGP a nuestros vecinos
+        self._get_neighbours()  # Guardamos los vecinos del router en self.neighbour_ports
         print(f"----> Enviando mensaje START_BGP a routers vecinos")
-        for port in self.neighbour_ports:
-            bgp_start = self.create_init_BGP_message(
-                "127.0.0.1", port, 10, 120)
-            router_socket.sendto(
-                bgp_start.encode(), ('localhost', port))
+        self._send_bgp_msg(router_socket, "START_BGP")
 
         prev_route_table = ""
         with open(self.routes_file, "r") as f:
@@ -410,15 +417,16 @@ class BGP:
         prev_route_table = current_route_table
 
         # Inicialmente enviamos las rutas a nuestros vecinos
-        self._send_bgp_message(router_socket)
+        self._send_bgp_msg(router_socket, "BGP_ROUTES")
 
         timer_thread = Thread(target=timer)
         timer_thread.start()
         global t  # tiempo del timer
         while t != 0:
+            # Caso tabla de rutas cambia -> reset timer y envio nuevamente rutas
+            if prev_route_table != current_route_table:
+                t = 10
+                self._send_bgp_msg(router_socket)
 
             received_packet, _ = router_socket.recvfrom(1024)
-            if prev_route_table != current_route_table:
-                self._send_bgp_message(router_socket)
-
         return current_route_table
