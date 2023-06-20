@@ -399,8 +399,7 @@ class BGP:
 
     def _search_coincidende_asn_route(self, routes_table: str, dest_asn: str) -> tuple[str, str]:
         """Busca en la tabla de rutas `routes_table` la ruta que coincide con el ASN de destino `dest_asn`, retorna
-        una tupla con la tabla de rutas nueva con la ruta que coincide eliminada
-        y la ruta eliminada.
+        una tupla con la tabla de rutas nueva con la ruta que coincide eliminada y la ruta eliminada.
         """
 
         raw_routes_list = routes_table.split('\n')
@@ -413,7 +412,7 @@ class BGP:
                 raw_routes_list.remove(raw_route)
                 break
 
-        return ('\n'.join(raw_routes_list), raw_route)
+        return ('\n'.join(raw_routes_list), self._get_asn_route(raw_route))
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
