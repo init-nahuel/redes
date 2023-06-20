@@ -517,7 +517,7 @@ class BGP:
                     if str(self.router.router_port) in route:
                         continue
 
-                    # Generamos una lista con los ASN de la ruta ASN
+                    # Generamos una lista con los ASN de la nueva ruta ASN
                     asn_route_parsed = route.split(' ')
 
                     dest_asn = asn_route_parsed[0]
@@ -539,11 +539,12 @@ class BGP:
                                 self._create_new_route(asn_route_parsed)
 
                 if new_routes != "":  # Agregamos nuevas rutas
+                    current_route_table += new_routes
                     # Caso sacamos una ruta para comparar cual era mas corta y gano la ruta previa
-                    if len(current_route_table) == len(new_routes) + len(prev_route_table):
-                        current_route_table = prev_route_table
-                    else:
-                        current_route_table += new_routes
+                    # if len(current_route_table) == len(new_routes) + len(prev_route_table):
+                    #     current_route_table = prev_route_table
+                    # else:
+                    #     current_route_table += new_routes
             except socket.timeout:
                 # Volvemos a resetear al valor por default el timeout del socket
                 self.router.router_socket.settimeout(None)
