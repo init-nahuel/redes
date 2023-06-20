@@ -328,7 +328,7 @@ class BGP:
         # luego uno desde la izquierda, esto funciona debido al formato estandar que se definio
         route = route.rsplit(' ', 3)
 
-        route = route[0].split(' ', 1) + route
+        route = route[0].split(' ', 1)
         asn_route = route[1]  # Obtenemos la ruta ASN
 
         return asn_route
