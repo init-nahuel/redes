@@ -9,6 +9,20 @@ class Router:
         self.router_ip = router_addres[0]
         self.router_port = router_addres[1]
 
+    def _get_asn_route(self, route: str) -> str:
+        """Obtiene la ruta ASN que contiene la ruta `route`, retorna un string con la ruta.
+        Ej: '127.0.0.1 8882 8881 127.0.0.1 8882 1000' -> '8882 8881'.
+        """
+
+        # Dividimos empezando desde la derecha una cantidad de 3 espacios y
+        # luego uno desde la izquierda, esto funciona debido al formato estandar que se definio
+        route = route.rsplit(' ', 3)
+
+        route = route[0].split(' ', 1)
+        asn_route = route[1]  # Obtenemos la ruta ASN
+
+        return asn_route
+
     def parse_packet(self, ip_packet: bytes) -> dict[str, str]:
         """Extrae los datos del paquete IP recibido, retorna un diccionario
         con las llaves `dest_ip`: ip de destino, `dest_port`: puerto de destino, `message`: mensaje del paquete,
@@ -73,19 +87,17 @@ class Router:
                     self.rr_routes = raw_routes
 
                 for r in self.rr_routes:
-                    parsed_route = self.parse_route(r)
-                    min_port = parsed_route['port_range'][0]
-                    max_port = parsed_route['port_range'][1]
-                    mtu = parsed_route['MTU']
+                    port = self._get_asn_route(r).split(' ')[0]
+                    mtu = r.split(' ')[-1]
 
-                    if (parsed_route['red_CIDR'] == destination_address[0] and min_port <= destination_address[1] <= max_port):
+                    if (int(port) == destination_address[1]):
                         # La removemos y agregamos al final, como se recorre en secuencia la lista de rutas se
                         # asegura que la ruta utilizada ahora no se utilizara denuevo hasta que las rutas alternativas se usen y se agregen
                         # despues de esta (si es que existen rutas alternativas)
                         self.rr_routes.remove(r)
                         self.rr_routes.append(r)
 
-                        return (parsed_route['hop_address'], int(mtu))
+                        return (('127.0.0.1', int(port)), int(mtu))
                 return None
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
