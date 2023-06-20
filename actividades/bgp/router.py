@@ -321,7 +321,7 @@ class BGP:
 
     def _get_asn_route(self, route: str) -> str:
         """Obtiene la ruta ASN que contiene la ruta `route`, retorna un string con la ruta.
-        Ej: '127.0.0.1 [8882 8881] 127.0.0.1 8882 100' -> '8882 8881'.
+        Ej: '127.0.0.1 8882 8881 127.0.0.1 8882 100' -> '8882 8881'.
         """
 
         # Dividimos empezando desde la derecha una cantidad de 3 espacios y
