@@ -1,27 +1,4 @@
 import socket
-from threading import Thread
-import time
-
-t = 10
-
-
-def timer() -> None:
-    """Timer para timeout a la hora de llamar a `run_BGP`, utiliza la variable global
-    `t` para contar el tiempo transcurrido.
-    """
-
-    global t
-    while True:
-        if t == 0:
-            return
-        else:
-            time.sleep(1)
-            print("Dormi")
-            t -= 1
-
-
-def wait(time_event, timeout):
-    return time_event + timeout <= time.time()
 
 
 class Router:
