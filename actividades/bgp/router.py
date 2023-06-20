@@ -89,6 +89,7 @@ class Router:
                 for r in self.rr_routes:
                     port = self._get_asn_route(r).split(' ')[0]
                     mtu = r.split(' ')[-1]
+                    hop_port = r.split(' ')[-2]
 
                     if (int(port) == destination_address[1]):
                         # La removemos y agregamos al final, como se recorre en secuencia la lista de rutas se
@@ -97,7 +98,7 @@ class Router:
                         self.rr_routes.remove(r)
                         self.rr_routes.append(r)
 
-                        return (('127.0.0.1', int(port)), int(mtu))
+                        return (('127.0.0.1', int(hop_port)), int(mtu))
                 return None
         except OSError:
             print("----> Archivo tabla de rutas corrompido, no es posible leerlo.")
