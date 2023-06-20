@@ -532,7 +532,8 @@ class BGP:
                         asn_route = self._get_asn_route(asn_route).split(' ')
 
                         # Caso ruta nueva es mas corta -> reemplazamos
-                        if len(asn_route) > len(asn_route_parsed):
+                        # (a asn_route_parsed le falta el asn del router de llegada por tanto le sumamos 1)
+                        if len(asn_route) > len(asn_route_parsed) + 1:
                             current_route_table = new_route_table
                             new_routes += "\n" + \
                                 self._create_new_route(asn_route_parsed)
