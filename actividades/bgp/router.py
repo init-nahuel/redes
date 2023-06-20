@@ -412,7 +412,7 @@ class BGP:
                 raw_routes_list.remove(raw_route)
                 break
 
-        return ('\n'.join(raw_routes_list), self._get_asn_route(raw_route))
+        return ('\n'.join(raw_routes_list), raw_route)
 
     def create_init_BGP_message(self, dest_ip: str, dest_port: int, ttl: int, id: int) -> str:
         """Crea el paquete con el mensaje de inicio del algoritmo BGP `START_BGP`.
@@ -539,11 +539,6 @@ class BGP:
 
                 if new_routes != "":  # Agregamos nuevas rutas
                     current_route_table += new_routes
-                    # Caso sacamos una ruta para comparar cual era mas corta y gano la ruta previa
-                    # if len(current_route_table) == len(new_routes) + len(prev_route_table):
-                    #     current_route_table = prev_route_table
-                    # else:
-                    #     current_route_table += new_routes
             except socket.timeout:
                 # Volvemos a resetear al valor por default el timeout del socket
                 self.router.router_socket.settimeout(None)
