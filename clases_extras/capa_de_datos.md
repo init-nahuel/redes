@@ -4,6 +4,9 @@
   - [Capa de enlace de Datos o Data Link Layer](#capa-de-enlace-de-datos-o-data-link-layer)
   - [Colisiones](#colisiones)
   - [Enlaces](#enlaces)
+  - [Elementos de la capa de enlace de datos](#elementos-de-la-capa-de-enlace-de-datos)
+  - [Servicios y subcapas de la capa de enlace de datos](#servicios-y-subcapas-de-la-capa-de-enlace-de-datos)
+  - [Problema de Acceso Multiple o Multiple Access Problem](#problema-de-acceso-multiple-o-multiple-access-problem)
 
 ## Capa de enlace de Datos o Data Link Layer
 
@@ -19,3 +22,31 @@ Al enviar informacion por un enlace fisico, tipicamente lo que se hace es enviar
 
 ## Enlaces
 
+Debemos notar que no todos los enlaces son compartidos por varias entidades y, por lo tanto, no todos los enlaces vana sufrir colisiones de la misma manera. En particular, hay enlaces que conectan dos puntos entre si y nada mas. De esta forma podemos distinguir los siguientes tipos de enlace.
+
+- **Enlaces punto a punto:** Estos enlaces conectan dos entidades entre si. Un ejemplo de este tipo de enlace corresponde a los cables ethernet.
+- **Enlaces de broadcast:** Los enlaces de broadcast pueden ser utilizados por varias entidades. Dentro de este tipo de enlaces encontramos las comunicaciones *wireless* como Wi-Fi o comunicaciones satelitales.
+
+## Elementos de la capa de enlace de datos
+
+Varios elementos participan en el funcionamiento de la capa de enlace de datos. A continuacion mencionaremos algunos de los elementos y terminos principales que participan en esta capa.
+
+- **Frames:** Al enviar datos a traves de la capa de enlace de datos estos deben ser encapsulados usando los *headers* correspondientes.
+- **Nodos:** Dentro de la capa de enlace de datos, los nodos se refieren a cualquier equipo que pueda manejar el funcionamiento de esta capa.
+- **Enlaces:** Corresponde al medio de comunicacion que conecta nodos adyacentes.
+- **Media Access Control Address o MAC Address:** Las MAC address corresponden a las direcciones manejadas dentro de la capa de enlace de datos. A diferencia de las direcciones IP, las MAC address no poseen una estructura jerarquica. Estas direcciones son asignadas directamente a las *tarjetas de red* o *Network Interface Card* (NIC) por su fabricante.
+- **Local Area Network (LAN) o red local:** Grupo de equipos que comparte un mismo enlace de comunicaciones.
+- **Switches:** Tal como en la capa de red los paquetes deben pasar por routers, en la capa de enlace de datos los frames deben pasar por switches. Los switches pueden recibir y hacer forward de frames a traves de la red local o LAN.
+
+## Servicios y subcapas de la capa de enlace de datos
+
+La capa de datos provee dos servicios principales: **asegurar la integridad de los frames** (en medios pocos confiables) y **manejar el acceso a enlace o Link Access**. Cada uno de estos servicios identifica una subcapa dentro de la capa de datos. La **subcapa de Logical Link Control** se encarga de manejar **asegurar la integridad de los frames**, mientras que la **subcapa de Media Access Control** se encarga del **link access.**
+
+- **Subcapa de Logical Link Control (LLC):** Esta subcapa se encarga de controlar el funcionamiento del enlace y asegurar que los frames lleguen de forma integra. Esta capa se encarga de detectar y corregir errores. Ademas, puede proveer transmision confiable utilizando ACKs de forma similar a TCP. El servicio de transmision confiable se provee **unicamente en medios que lo requieran**, de lo contrario esta responsabilidad se le deja a la capa de transporte.
+- **Subcapa de Media Access Control (MAC):** La funcion principal de esta subcapa es manejar el acceso al enlace o el *link access.* Es decir, se encarga de proveer las reglas que determinan el acceso o uso del enlace. En el caso de enlaces punto a punto el manejo del acceso al enlace es relativamente simple. En cambio, en el caso de enlaces o canales de broadcast, donde multiples nodos pueden usar un mismo enlace, el manejo es mas complejo.
+
+## Problema de Acceso Multiple o Multiple Access Problem
+
+La capa de datos se encarga de manejar el acceso al enlace de tal manera que este sea utilizado **sin inducir perdida por colisiones.** En *enlaces punto a punto* el manejo de colisiones es relativamente simple, pues estos enlaces comunican un unico par de nodos. Sin embargo, este problema se vuelve mas complejo cuando un mismo canal es compartido por varios nodos como es el caso de *enlaces de broadcast*. Cuando un enlace es compartido por varios nodos, todos los nodos pueden hacer uso del enlace en cualquier momento. Si los nodos utilizan dicho canal al mismo tiempo, ocurren colisiones. A su vez, estas colisiones resultan en perdida de informacion, **reduciendo la eficiencia de la transmision.**
+
+El problema de cordinar el uso de un canal de comunicacion para enviar yu recibir informacion se conoce como el **problema de acceso multiple**. Para resolverlo es necesario contar con protocolos que regulen el uso del canal.
