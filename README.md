@@ -48,6 +48,7 @@ En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo 
 
 ## Clase extras
 
+- [DNS](./clases_extras/dns.md)
 - [Protocolos de ruteo interno: RIP y OSPF](./clases_extras/ruteo_rip_ospf.md)
 - [Network Address Translation (NAT)](./clases_extras/nat.md)
 - [Capa de Datos](./clases_extras/capa_de_datos.md)
