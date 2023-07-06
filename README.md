@@ -23,7 +23,7 @@ Gran parte de la materia que se encuentra resumida en los ejemplos aplicados fue
 
 En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo que realizan los ayudantes luego de evaluar la tarea, adicionalmente dentro de cada actividad (tarea) se encuentra un mini-informe el cual era parte de la entrega.
 
-- [**01 (HTTP) Construir un Proxy**](./actividades/request_http/proxy_server_co.py)
+- [**01 (HTTP) Construir un Proxy**](./actividades/request_http/resumen.md)
 - [**02 (DNS) Construccion Resolver**](./actividades/resolver_dns/resolver.py)
 - [**03 (TCP y UDP) Socket OC Stop & Wait**](./actividades/sockets_stop_wait/socketTCP.py)
 - [**04 (TCP Comunicacion Confiable) Selective Repeat**]()
