@@ -117,7 +117,7 @@ El comando `curl` funciona como cliente HTTP para texto permitiendonos crear de 
 El comando `dig` (**Domain Information Groper**) nos permite hacer consultas DNS y nos muestra la respuesta de la consulta, por lo que es especialmente util para probar el funcionamiento de un resolver. Para hacer consultas DNS con `dig` a un resolver corriendo en una IP y puerto especificos se puede usar el siguiente comando:
 
 ```bash
-% dig -[puerto] @[ip] [domain]
+% dig -p[puerto] @[ip] [domain]
 ```
 
 Ejemplo:
