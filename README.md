@@ -9,6 +9,7 @@
     - [`netem`](#netem)
     - [`curl` (HTTP)](#curl-http)
     - [`dig` (DNS)](#dig-dns)
+    - [`tcpdump` (DNS)](#tcpdump-dns)
 
 Repositorio con las Tareas, Auxiliares y ejemplos por topico del curso Redes CC4303 **semestre Otonho 2023.**
 
@@ -128,3 +129,11 @@ Ejemplo:
 ```
 
 - En el caso en que no se especifica puerto es porque se esta preguntando al resolver de Google.
+
+### `tcpdump` (DNS)
+
+Se puede analizar el trafico que hay en su red local usando `tcpdump` para que este reporte el trafico que entra y sale por el puerto especificado:
+
+```bash
+$ sudo tcpdump -v -i lo port 5300
+```
