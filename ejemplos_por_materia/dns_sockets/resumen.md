@@ -1,5 +1,15 @@
 # DNS programado con sockets
 
+- [DNS programado con sockets](#dns-programado-con-sockets)
+  - [Query: Header](#query-header)
+  - [Query data: Question](#query-data-question)
+  - [Envio del mensaje](#envio-del-mensaje)
+    - [Libreria `binascii`](#libreria-binascii)
+    - [Libreria `dnslib`](#libreria-dnslib)
+  - [Response: Header](#response-header)
+  - [Response data: Question](#response-data-question)
+  - [Response data: Answer](#response-data-answer)
+
 Antes de comenzar es importante mencionar que para comunicarse con servidores DNS se deben usar **sockets no orientados a conexion, adicionalmente mencionar que el flujo de trafico de DNS es anycast y su puerto es el 53**.
 
 Todos los mensajes de DNS utilizan el mismo formato:
