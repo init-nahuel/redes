@@ -46,6 +46,7 @@ En la carpeta `actividades` pueden encontrar el pdf con las preguntas de codigo 
 - [**07 Comunicandonos Confiablemente**](./auxiliares/07_comunicandonos_confiablemente.md)
 - [**08 Control de Gestion**](./auxiliares/08_control_de_gestion.md)
 - [**09 Ruteando Rutas**](./auxiliares/09_ruteando_rutas.md)
+- [**10 IPs, NAT y Capa de Enlace**](./auxiliares/10_ips_nat_capa_de_enlace.md)
 
 ## Clase extras
 
